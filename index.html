@@ -113,7 +113,7 @@
         .segmented-btn.active { color: var(--text-primary); }
 
         /* СПИСКИ ТОВАРОВ */
-        .category-title { font-family: 'Alice', serif; font-size: 1.15rem; color: var(--text-primary); margin: 16px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+        .category-title { font-family: 'Alice', serif; font-size: 1.15rem; color: var(--text-primary); margin: 16px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; align-items: center; gap: 8px; }
         
         .routine-item { background: var(--surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; cursor: pointer; transition: 0.2s; }
         .routine-item:active { background: var(--bg-main); }
@@ -124,7 +124,7 @@
 
         /* ТОЧКИ СТАТУСА ИЗ MYLUMY */
         .status-controls { display: flex; gap: 8px; align-items: center; }
-        .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; }
+        .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; color: transparent; }
         .dot-btn.active { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
         
         .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
@@ -136,6 +136,17 @@
         .store-btn { background: var(--bg-main); color: var(--accent-main); font-size: 0.8125rem; padding: 6px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid var(--border-color); }
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 12px; }
+
+        /* ИНТЕРФЕЙС НАСТРОЕК КАК В IOS */
+        .inset-list-group { margin-bottom: 20px; width: 100%; }
+        .inset-list { background: var(--surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; }
+        .inset-list-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 1rem; color: var(--text-primary); cursor: pointer; transition: background 0.2s ease; }
+        .inset-list-item:last-child { border-bottom: none; }
+        .inset-list-item:active { background: var(--bg-main); }
+        .inset-content { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .inset-label { font-weight: 600; font-size: 0.95rem; }
+        .inset-sub { font-size: 0.75rem; color: var(--text-secondary); }
+        .inset-right { color: var(--icon-inactive); display: flex; align-items: center; justify-content: center; }
 
         /* МОДАЛЬНЫЕ ОКНА MYLUMY */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: 0.25s ease; }
@@ -174,7 +185,7 @@
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
 
-        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; }
         .toast.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
         .history-list-item { font-size: 0.9375rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
@@ -222,7 +233,7 @@
                 <input type="hidden" id="editId">
                 <div class="form-group">
                     <label>Название</label>
-                    <input type="text" id="inpName" placeholder="Например: Стиральный порошок">
+                    <input type="text" id="inpName" placeholder="Название">
                 </div>
                 <div class="form-group">
                     <label>Категория</label>
@@ -232,7 +243,7 @@
                 </div>
                 <div class="form-group">
                     <label>Заметка / Бренд (для умного поиска)</label>
-                    <input type="text" id="inpNote" placeholder="Например: Synergetic 2.75л">
+                    <input type="text" id="inpNote" placeholder="Бренд или заметка">
                 </div>
                 <button class="btn-add" id="btnDeleteForm" style="color: #C0392B; border-color: #C0392B; background: rgba(192,57,43,0.1); margin-top: 20px;">Удалить товар</button>
             </div>
@@ -260,7 +271,21 @@
                         <button class="theme-card-btn" data-theme="midnight"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #0F141C;"></div><div class="theme-preview-accent" style="background: #4E9EFF;"></div></div><span class="theme-card-title">Midnight</span></button>
                     </div>
                 </div>
-                <button class="btn-add" id="btnForceUpdate">Проверить обновления (v1.0)</button>
+                
+                <div class="inset-list-group" style="margin-top: 24px;">
+                    <div class="inset-list">
+                        <div class="inset-list-item" id="btnForceUpdate">
+                            <div class="inset-content">
+                                <div class="inset-label">Обновление</div>
+                                <div class="inset-sub">Версия 1.1</div>
+                            </div>
+                            <div class="inset-right">
+                                <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -289,7 +314,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Полный список категорий и товаров из вашего списка
         const CATEGORIES = [
             "Овощи, фрукты, зелень и ягоды", "Замороженные продукты и полуфабрикаты", 
             "Мясо, птица, рыба и полуфабрикаты", "Молочные продукты и яйца", "Сыры", 
@@ -298,31 +322,34 @@
         ];
 
         const initialProducts = [
-            // Овощи
             {n: "Томаты", c: 0}, {n: "Огурцы", c: 0}, {n: "Яблоки", c: 0}, {n: "Бананы", c: 0},
-            // Заморозка
             {n: "Брокколи", c: 1}, {n: "Тыква (нарезанная)", c: 1}, {n: "Морковь (кубиками)", c: 1}, {n: "Черника / Смородина чёрная", c: 1}, {n: "Картофель фри", c: 1}, {n: "Вареники", note: "с картофелем и грибами", c: 1}, {n: "Сырники", note: "из рикотты", c: 1}, {n: "Лепёшки роти", note: "слоёные / с зелёным луком", c: 1}, {n: "Тесто слоёное бездрожжевое", c: 1}, {n: "Тесто слоёное дрожжевое", c: 1}, {n: "Булочки", note: "для бургеров / с кунжутом", c: 1},
-            // Мясо
             {n: "Фарш из куриной грудки", c: 2}, {n: "Голень куриная", c: 2}, {n: "Фрикадельки", note: "куриные / из индейки", c: 2}, {n: "Сосиски", note: "куриные", c: 2}, {n: "Рыбные палочки", note: "из филе минтая", c: 2}, {n: "Тунец", note: "консервированный в собственном соку", c: 2},
-            // Молоко
             {n: "Яйца куриные (С1)", c: 3}, {n: "Молоко 2,5%", c: 3}, {n: "Кефир 3,2%", c: 3}, {n: "Ряженка 3,2%", c: 3}, {n: "Сметана 15%", c: 3}, {n: "Творожок со сливками 5%", c: 3}, {n: "Творог 9%", c: 3}, {n: "Масло сливочное 82,5%", c: 3}, {n: "Сырок глазированный", c: 3},
-            // Сыры
             {n: "Сыр творожный сливочный 65%", c: 4}, {n: "Сыр полутвёрдый тёртый 45%", c: 4},
-            // Бакалея
             {n: "Макаронные изделия", note: "вермишель, фигурные", c: 5}, {n: "Мука", c: 5}, {n: "Листы для лазаньи", c: 5}, {n: "Рис", c: 5}, {n: "Крупа гречневая", c: 5}, {n: "Чечевица красная", c: 5}, {n: "Овсяные хлопья", c: 5}, {n: "Сахар тростниковый", c: 5},
-            // Соусы
             {n: "Соус для макарон / томатный", c: 6}, {n: "Бургер-соус", c: 6}, {n: "Соус десертный (шоколадный)", c: 6}, {n: "Зажарка для супа", note: "с морковью и луком", c: 6}, {n: "Смеси приправ для плова", c: 6}, {n: "Бумага для жарки филе", c: 6},
-            // Сладкое
             {n: "Кофе в дрип-пакетах", c: 7}, {n: "Сгущённое молоко", note: "с бананом", c: 7}, {n: "Мороженое", note: "пломбир в вафельном стаканчике", c: 7}, {n: "Желе порционное (низкокалорийное)", c: 7}, {n: "Желатин пищевой", c: 7}, {n: "Ванильный сахар", c: 7},
-            // Быт
             {n: "Бумажные полотенца", c: 8}, {n: "Губки для посуды", c: 8}, {n: "Пергамент / бумага для выпечки", c: 8}, {n: "Сменные кассеты / фильтры для воды", c: 8}, {n: "Стиральный порошок", c: 8}, {n: "Глазные капли Стиллавит", c: 8}
         ].map((p, i) => ({ id: i+1, name: p.n, cat: CATEGORIES[p.c], note: p.note || '', status: 'ok' }));
 
         let items = [];
-        let historyLog = []; // { date: 'YYYY-MM-DD', itemId: 1, status: 'empty' }
+        let historyLog = []; 
         let currentTab = 'shelves';
         let viewedDate = getTodayStr();
         let calCurrentViewDate = new Date();
+
+        const STORE_KEYS = { items: 'stock_items_v2', history: 'stock_history_v2' };
+
+        const safeStorage = {
+            get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+            set(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+        };
+
+        const tgCloud = {
+            set(key, val) { return new Promise(resolve => { if (tg.CloudStorage) tg.CloudStorage.setItem(key, val, () => resolve()); else resolve(); }); },
+            get(key) { return new Promise(resolve => { if (tg.CloudStorage) tg.CloudStorage.getItem(key, (err, val) => resolve(val || null)); else resolve(null); }); }
+        };
 
         function getTodayStr(d) {
             const date = d || new Date();
@@ -332,30 +359,64 @@
             return `${y}-${m}-${day}`;
         }
 
-        // --- Загрузка и сохранение ---
-        function initApp() {
-            populateCatSelect();
-            if (tg.CloudStorage) {
-                tg.CloudStorage.getKeys((err, keys) => {
-                    if (keys && keys.includes('stock_items')) {
-                        tg.CloudStorage.getItem('stock_items', (e, val) => { items = JSON.parse(val); render(); });
-                        tg.CloudStorage.getItem('stock_history', (e, val) => { historyLog = JSON.parse(val || '[]'); });
-                    } else { items = initialProducts; saveApp(); render(); }
-                });
-            } else {
-                items = JSON.parse(localStorage.getItem('stock_items')) || initialProducts;
-                historyLog = JSON.parse(localStorage.getItem('stock_history')) || [];
-                render();
+        // Система сохранения с обходом лимита 4КБ CloudStorage через чанки
+        async function saveToCloudChunked(key, dataObj) {
+            const jsonStr = JSON.stringify(dataObj);
+            const chunks = jsonStr.match(/.{1,3900}/g) || [];
+            await tgCloud.set(key + '_count', chunks.length.toString());
+            for (let i = 0; i < chunks.length; i++) {
+                await tgCloud.set(key + '_' + i, chunks[i]);
             }
         }
 
+        async function loadFromCloudChunked(key) {
+            const countStr = await tgCloud.get(key + '_count');
+            if (!countStr) return null;
+            const count = parseInt(countStr, 10);
+            let fullStr = '';
+            for (let i = 0; i < count; i++) {
+                const chunk = await tgCloud.get(key + '_' + i);
+                if (chunk) fullStr += chunk;
+            }
+            try { return JSON.parse(fullStr); } catch(e) { return null; }
+        }
+
         function saveApp() {
+            // Мгновенное локальное сохранение - предотвращает сбросы при закрытии
+            safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+            safeStorage.set(STORE_KEYS.history, JSON.stringify(historyLog));
+            // Фоновая отправка в облако
             if (tg.CloudStorage) {
-                tg.CloudStorage.setItem('stock_items', JSON.stringify(items));
-                tg.CloudStorage.setItem('stock_history', JSON.stringify(historyLog));
-            } else {
-                localStorage.setItem('stock_items', JSON.stringify(items));
-                localStorage.setItem('stock_history', JSON.stringify(historyLog));
+                saveToCloudChunked('cloud_items_v2', items);
+                saveToCloudChunked('cloud_history_v2', historyLog);
+            }
+        }
+
+        async function initApp() {
+            populateCatSelect();
+            
+            // 1. Сначала грузим из LocalStorage для мгновенного отображения
+            const localItems = safeStorage.get(STORE_KEYS.items);
+            const localHistory = safeStorage.get(STORE_KEYS.history);
+            if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
+            if (localHistory) { historyLog = JSON.parse(localHistory); }
+            render();
+
+            // 2. Затем проверяем Облако в фоне
+            if (tg.CloudStorage) {
+                const cloudItems = await loadFromCloudChunked('cloud_items_v2');
+                if (cloudItems && cloudItems.length > 0) {
+                    items = cloudItems;
+                    render();
+                }
+                const cloudHistory = await loadFromCloudChunked('cloud_history_v2');
+                if (cloudHistory) {
+                    historyLog = cloudHistory;
+                    render();
+                }
+                // Синхронизируем локалку с актуальным облаком
+                safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+                safeStorage.set(STORE_KEYS.history, JSON.stringify(historyLog));
             }
         }
 
@@ -398,9 +459,9 @@
                             ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
                         </div>
                         <div class="status-controls" onclick="event.stopPropagation()">
-                            <button class="dot-btn dot-green ${item.status==='ok'?'active':''}" onclick="setStatus(${item.id}, 'ok')"></button>
-                            <button class="dot-btn dot-orange ${item.status==='soon'?'active':''}" onclick="setStatus(${item.id}, 'soon')"></button>
                             <button class="dot-btn dot-red ${item.status==='empty'?'active':''}" onclick="setStatus(${item.id}, 'empty')"></button>
+                            <button class="dot-btn dot-orange ${item.status==='soon'?'active':''}" onclick="setStatus(${item.id}, 'soon')"></button>
+                            <button class="dot-btn dot-green ${item.status==='ok'?'active':''}" onclick="setStatus(${item.id}, 'ok')"></button>
                         </div>
                     </div>`;
                 });
@@ -409,12 +470,16 @@
         }
 
         function renderShopping(container) {
-            const urgencyMap = { 'empty': '🔴 Срочно (Закончилось)', 'soon': '🟡 Планово (Заканчивается)' };
-            ['empty', 'soon'].forEach(st => {
-                const list = items.filter(i => i.status === st);
+            const urgencies = [
+                { id: 'empty', label: 'Срочно (Закончилось)', color: 'var(--red, #CD3434)' },
+                { id: 'soon', label: 'Планово (Заканчивается)', color: 'var(--orange, #D7871E)' }
+            ];
+            
+            urgencies.forEach(urg => {
+                const list = items.filter(i => i.status === urg.id);
                 if (list.length === 0) return;
                 
-                let html = `<div class="category-title">${urgencyMap[st]}</div>`;
+                let html = `<div class="category-title"><svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 2px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg> ${urg.label}</div>`;
                 list.forEach(item => {
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
                     html += `
@@ -428,27 +493,29 @@
                                 <a href="https://vkusvill.ru/search/?text=${query}" class="store-btn" target="_blank">ВкусВилл</a>
                             </div>
                         </div>
-                        <button class="dot-btn dot-green" onclick="setStatus(${item.id}, 'ok')" style="opacity: 1; border: 1px solid var(--border-color)">✓</button>
+                        <button class="dot-btn dot-green" onclick="setStatus(${item.id}, 'ok')" style="opacity: 1; border: 1px solid var(--border-color); color: #fff; background: rgb(47, 139, 88);">
+                            <svg class="svg-icon" style="width: 14px; height: 14px; stroke: currentColor;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
                     </div>`;
                 });
                 container.innerHTML += html;
             });
 
             if(items.filter(i => i.status !== 'ok').length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Всё куплено и запасы полны! 🎉</div>`;
+                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">Сейчас всё куплено</div>`;
             }
         }
 
         function renderHistoryForDate(container) {
             const events = historyLog.filter(h => h.date === viewedDate);
             if (events.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">В этот день ничего не заканчивалось.</div>`;
+                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">В этот день ничего не заканчивалось.</div>`;
                 return;
             }
             container.innerHTML = `<div class="category-title">Закончилось в этот день:</div>`;
             events.forEach(e => {
-                const icon = e.status === 'empty' ? '🔴' : '🟡';
-                container.innerHTML += `<div class="history-list-item">${icon} ${e.name}</div>`;
+                const dotClass = e.status === 'empty' ? 'dot-red' : 'dot-orange';
+                container.innerHTML += `<div class="history-list-item"><div class="dot-btn ${dotClass}" style="width: 12px; height: 12px; min-width: 12px; pointer-events: none; opacity: 1;"></div> ${e.name}</div>`;
             });
         }
 
@@ -456,15 +523,12 @@
             const item = items.find(i => i.id === id);
             if (item) {
                 item.status = newStatus;
-                
-                // Запись в календарь истории, только если товар кончается
                 if (newStatus !== 'ok') {
                     const today = getTodayStr();
                     const existingIdx = historyLog.findIndex(h => h.date === today && h.itemId === id);
                     if (existingIdx > -1) { historyLog[existingIdx].status = newStatus; }
                     else { historyLog.push({ date: today, itemId: id, name: item.name, status: newStatus }); }
                 }
-                
                 saveApp(); render();
             }
         }
@@ -593,7 +657,11 @@
         document.getElementById('btnAddItem').onclick = () => openForm(null);
 
         document.getElementById('btnForceUpdate').onclick = () => {
-            showToast('Установлена самая свежая версия (v1.0)');
+            showToast('Обновление...');
+            setTimeout(() => {
+                // Перезагрузка страницы с сохранением кэша локалки
+                window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
+            }, 500);
         };
 
         function showToast(msg) {
