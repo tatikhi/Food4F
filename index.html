@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Мои Запасы</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-main: #000000;
+            --text-muted: #8E8E93;
+            --separator: #C6C6C8;
+            --blue: #007AFF;
+            --red: #FF3B30;
+            --yellow: #FFCC00;
+            --green: #34C759;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1C1C1E;
+                --text-main: #FFFFFF;
+                --separator: #38383A;
+            }
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px; /* Для таб-бара */
+            -webkit-font-smoothing: antialiased;
+        }
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 20px 16px 10px;
+        }
+        h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 20px 16px 6px;
+            font-weight: 400;
+            letter-spacing: -0.08px;
+        }
+        
+        /* Списки iOS */
+        .ios-list {
+            background: var(--card-bg);
+            border-radius: 10px;
+            margin: 0 16px;
+            overflow: hidden;
+        }
+        .ios-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 0.5px solid var(--separator);
+            min-height: 44px;
+            box-sizing: border-box;
+        }
+        .ios-item:last-child {
+            border-bottom: none;
+        }
+        .item-info {
+            flex-grow: 1;
+            padding-right: 10px;
+        }
+        .item-name {
+            font-size: 17px;
+            line-height: 22px;
+        }
+        
+        /* Индикаторы статуса */
+        .status-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--separator);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .dot.active[data-status="empty"] { background: var(--red); border-color: var(--red); }
+        .dot.active[data-status="soon"] { background: var(--yellow); border-color: var(--yellow); }
+        .dot.active[data-status="ok"] { background: var(--green); border-color: var(--green); }
+        
+        /* Кнопки и ссылки */
+        .store-links {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .store-btn {
+            background: var(--bg-color);
+            color: var(--blue);
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .buy-btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* Блок Истории заказов */
+        .history-link {
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .arrow { color: var(--separator); font-size: 20px; }
+
+        /* Таб-бар */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 0.5px solid var(--separator);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+        }
+        @media (prefers-color-scheme: dark) {
+            .tab-bar { background: rgba(28, 28, 30, 0.85); }
+        }
+        .tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .tab.active { color: var(--blue); }
+        .tab svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+
+        /* Скрытые экраны */
+        .screen { display: none; }
+        .screen.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Экран 1: Полки (Инвентаризация) -->
+    <div id="screen-inventory" class="screen active">
+        <h2>Мои полки</h2>
+        <div id="inventory-container"></div>
+    </div>
+
+    <!-- Экран 2: Покупки -->
+    <div id="screen-shopping" class="screen">
+        <h2>К покупке</h2>
+        
+        <!-- Блок истории покупок -->
+        <h3>История заказов (повтор)</h3>
+        <div class="ios-list">
+            <div class="ios-item">
+                <a href="https://www.ozon.ru/my/orderlist" class="history-link" target="_blank">Ozon <span class="arrow">›</span></a>
+            </div>
+            <div class="ios-item">
+                <a href="https://market.yandex.ru/my/orders" class="history-link" target="_blank">Яндекс Маркет <span class="arrow">›</span></a>
+            </div>
+            <div class="ios-item">
+                <a href="https://vkusvill.ru/profile/orders/" class="history-link" target="_blank">ВкусВилл <span class="arrow">›</span></a>
+            </div>
+        </div>
+
+        <div id="shopping-container"></div>
+    </div>
+
+    <!-- Навигация (Tab Bar) -->
+    <div class="tab-bar">
+        <div class="tab active" onclick="switchTab('inventory')">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+            Полки
+        </div>
+        <div class="tab" onclick="switchTab('shopping')">
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            Покупки
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Открываем на весь экран
+
+        // Исходные данные (ваш список)
+        const initialData = [
+            { id: 1, name: "Томаты", cat: "Овощи и фрукты", status: "ok" },
+            { id: 2, name: "Огурцы", cat: "Овощи и фрукты", status: "ok" },
+            { id: 3, name: "Яблоки", cat: "Овощи и фрукты", status: "ok" },
+            { id: 4, name: "Бананы", cat: "Овощи и фрукты", status: "ok" },
+            { id: 5, name: "Брокколи", cat: "Заморозка", status: "ok" },
+            { id: 6, name: "Вареники с картофелем", cat: "Заморозка", status: "ok" },
+            { id: 7, name: "Сырники", cat: "Заморозка", status: "ok" },
+            { id: 8, name: "Фарш куриный", cat: "Мясо и птица", status: "ok" },
+            { id: 9, name: "Рыбные палочки (минтай)", cat: "Мясо и птица", status: "ok" },
+            { id: 10, name: "Яйца куриные С1", cat: "Молочное", status: "ok" },
+            { id: 11, name: "Молоко 2.5%", cat: "Молочное", status: "ok" },
+            { id: 12, name: "Сыр творожный 65%", cat: "Сыры", status: "ok" },
+            { id: 13, name: "Макароны твердых сортов", cat: "Бакалея", status: "ok" },
+            { id: 14, name: "Гречка", cat: "Бакалея", status: "ok" },
+            { id: 15, name: "Бумага для выпечки", cat: "Бытовое", status: "ok" },
+            { id: 16, name: "Стиральный порошок", cat: "Бытовое", status: "ok" }
+        ]; // Я сократил список для наглядности, сюда вы сможете добавить остальные строки
+
+        let items = [];
+
+        // Инициализация (загрузка из ТГ Облака или локально)
+        function initApp() {
+            if (tg.CloudStorage) {
+                tg.CloudStorage.getItem('grocery_list', (err, value) => {
+                    if (err || !value) { items = initialData; saveApp(); } 
+                    else { items = JSON.parse(value); }
+                    render();
+                });
+            } else {
+                // Фолбэк для теста в браузере
+                const local = localStorage.getItem('grocery_list');
+                items = local ? JSON.parse(local) : initialData;
+                render();
+            }
+        }
+
+        // Сохранение данных
+        function saveApp() {
+            if (tg.CloudStorage) {
+                tg.CloudStorage.setItem('grocery_list', JSON.stringify(items));
+            } else {
+                localStorage.setItem('grocery_list', JSON.stringify(items));
+            }
+        }
+
+        // Смена статуса
+        window.setStatus = function(id, newStatus) {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                item.status = newStatus;
+                saveApp();
+                render();
+            }
+        }
+
+        // Переключение вкладок
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`screen-${tabName}`).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            render();
+        }
+
+        // Отрисовка интерфейса
+        function render() {
+            renderInventory();
+            renderShopping();
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventory-container');
+            container.innerHTML = '';
+            
+            // Группируем по категориям
+            const cats = [...new Set(items.map(i => i.cat))];
+            
+            cats.forEach(cat => {
+                const catItems = items.filter(i => i.cat === cat);
+                let html = `<h3>${cat}</h3><div class="ios-list">`;
+                
+                catItems.forEach(item => {
+                    html += `
+                    <div class="ios-item">
+                        <div class="item-name">${item.name}</div>
+                        <div class="status-controls">
+                            <div class="dot ${item.status==='empty'?'active':''}" data-status="empty" onclick="setStatus(${item.id}, 'empty')"></div>
+                            <div class="dot ${item.status==='soon'?'active':''}" data-status="soon" onclick="setStatus(${item.id}, 'soon')"></div>
+                            <div class="dot ${item.status==='ok'?'active':''}" data-status="ok" onclick="setStatus(${item.id}, 'ok')"></div>
+                        </div>
+                    </div>`;
+                });
+                html += `</div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function renderShopping() {
+            const container = document.getElementById('shopping-container');
+            container.innerHTML = '';
+
+            const emptyItems = items.filter(i => i.status === 'empty');
+            const soonItems = items.filter(i => i.status === 'soon');
+
+            if (emptyItems.length > 0) {
+                container.innerHTML += `<h3>Срочно (Доставка сегодня)</h3>` + buildShopList(emptyItems);
+            }
+            if (soonItems.length > 0) {
+                container.innerHTML += `<h3>Планово (Заказать на выходных)</h3>` + buildShopList(soonItems);
+            }
+            if (emptyItems.length === 0 && soonItems.length === 0) {
+                container.innerHTML += `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Всё куплено! 🎉</div>`;
+            }
+        }
+
+        function buildShopList(list) {
+            let html = `<div class="ios-list">`;
+            list.forEach(item => {
+                const query = encodeURIComponent(item.name);
+                html += `
+                <div class="ios-item">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="store-links">
+                            <a href="https://www.ozon.ru/search/?text=${query}" class="store-btn" target="_blank">Ozon</a>
+                            <a href="https://market.yandex.ru/search?text=${query}" class="store-btn" target="_blank">Маркет</a>
+                            <a href="https://vkusvill.ru/search/?text=${query}" class="store-btn" target="_blank">ВкусВилл</a>
+                        </div>
+                    </div>
+                    <button class="buy-btn" onclick="setStatus(${item.id}, 'ok')">Куплено</button>
+                </div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        // Запуск
+        initApp();
+    </script>
+</body>
+</html>
