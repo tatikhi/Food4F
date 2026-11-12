@@ -16,7 +16,7 @@
         })();
     </script>
 
-    <title>Мои Запасы</title>
+    <title>Food4F</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,31 +31,37 @@
             --bg-main: #FFF5F0; --surface: #FFFFFF; --text-primary: #331B14; --text-secondary: #704C42;
             --accent-main: #E87A5D; --accent-light: #FDE6DD; --border-color: #F7CBBF;
             --shadow-soft: 0 2px 8px rgba(232, 122, 93, 0.08); --icon-inactive: #C7A69C;
+            --ios-blue: #007AFF;
         }
         [data-theme="berry"] {
             --bg-main: #1D161E; --surface: #2A202C; --text-primary: #F7EBF0; --text-secondary: #B39DA8;
             --accent-main: #D96B94; --accent-light: #3D2938; --border-color: #4A3545;
             --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2); --icon-inactive: #6B5263;
+            --ios-blue: #0A84FF;
         }
         [data-theme="icederm"] {
             --bg-main: #F0F6FA; --surface: #FFFFFF; --text-primary: #122836; --text-secondary: #425F73;
             --accent-main: #2B78A3; --accent-light: #DCECF5; --border-color: #B9D5E6;
             --shadow-soft: 0 2px 8px rgba(43, 120, 163, 0.08); --icon-inactive: #90AEC2;
+            --ios-blue: #007AFF;
         }
         [data-theme="espresso"] {
             --bg-main: #F8F4EE; --surface: #FFFFFF; --text-primary: #2B211A; --text-secondary: #5C4C40;
             --accent-main: #6F4E37; --accent-light: #ECE1D7; --border-color: #D9C8B8;
             --shadow-soft: 0 2px 8px rgba(111, 78, 55, 0.08); --icon-inactive: #AFA093;
+            --ios-blue: #007AFF;
         }
         [data-theme="cyberglow"] {
             --bg-main: #F5F0FE; --surface: #FFFFFF; --text-primary: #1F1135; --text-secondary: #523D70;
             --accent-main: #8A5CF5; --accent-light: #EBE1FF; --border-color: #D3C2F8;
             --shadow-soft: 0 2px 8px rgba(138, 92, 245, 0.08); --icon-inactive: #A692CD;
+            --ios-blue: #0A84FF;
         }
         [data-theme="midnight"] {
             --bg-main: #0F141C; --surface: #161D2B; --text-primary: #F0F5FF; --text-secondary: #8E9EB8;
             --accent-main: #4E9EFF; --accent-light: #1A2E4A; --border-color: #23324A;
             --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3); --icon-inactive: #4B5E7D;
+            --ios-blue: #0A84FF;
         }
 
         * {
@@ -84,7 +90,7 @@
             stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
         }
 
-        .brand-font, .modal-title, .cal-month-title { font-family: 'Alice', Georgia, serif; font-weight: 400; }
+        .brand-font, .modal-title { font-family: 'Alice', Georgia, serif; font-weight: 400; }
         
         .header-bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .logo { font-family: 'Alice', Georgia, serif; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -92,16 +98,6 @@
         .btn-settings-round {
             width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border-color);
             color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-soft);
-        }
-
-        .streak-card {
-            background: var(--surface); border-radius: 16px; width: 100%; max-width: 480px; padding: 16px; margin-bottom: 14px;
-            border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
-        }
-
-        .date-chip {
-            display: inline-flex; align-items: center; justify-content: center; background: var(--surface); color: var(--text-primary);
-            border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.2s;
         }
 
         .main-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 480px; padding: 18px 16px; border: 1px solid var(--border-color); }
@@ -122,7 +118,7 @@
         .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; }
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
-        /* ТОЧКИ СТАТУСА ИЗ MYLUMY */
+        /* ТОЧКИ СТАТУСА НА ПОЛКЕ (Красный слева, Зеленый справа) */
         .status-controls { display: flex; gap: 8px; align-items: center; }
         .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; color: transparent; }
         .dot-btn.active { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
@@ -130,6 +126,11 @@
         .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
         .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
         .dot-red { background-color: rgb(205, 52, 52); color: rgb(205, 52, 52); }
+
+        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК (Чистая) */
+        .btn-check-done { background: rgb(47, 139, 88); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .btn-check-done:active { opacity: 0.8; }
+        .btn-check-done svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2.5; fill: none; }
 
         /* МАГАЗИНЫ */
         .store-links { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
@@ -143,12 +144,9 @@
         .inset-list-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 1rem; color: var(--text-primary); cursor: pointer; transition: background 0.2s ease; }
         .inset-list-item:last-child { border-bottom: none; }
         .inset-list-item:active { background: var(--bg-main); }
-        .inset-content { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-        .inset-label { font-weight: 600; font-size: 0.95rem; }
-        .inset-sub { font-size: 0.75rem; color: var(--text-secondary); }
-        .inset-right { color: var(--icon-inactive); display: flex; align-items: center; justify-content: center; }
+        .inset-list-item.center-action { justify-content: center; color: var(--ios-blue); font-weight: 600; }
 
-        /* МОДАЛЬНЫЕ ОКНА MYLUMY */
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: 0.25s ease; }
         .modal-overlay.active-modal { opacity: 1; }
         .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
@@ -162,16 +160,6 @@
         .modal-nav-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
 
         .modal-body-scrollable { overflow-y: auto; padding-bottom: 20px; }
-
-        /* КАЛЕНДАРЬ */
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .cal-nav-btn { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .cal-day-name { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); padding-bottom: 4px; }
-        .cal-day-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; border-radius: 50%; cursor: pointer; transition: 0.2s; color: var(--text-primary); position: relative; }
-        .cal-day-cell.selected { background: var(--accent-main); color: #FFFFFF; font-weight: 600; }
-        .cal-day-cell.has-event::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-main); }
-        .cal-day-cell.disabled { opacity: 0.3; pointer-events: none; }
 
         /* НАСТРОЙКИ (ТЕМЫ) */
         .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
@@ -187,14 +175,12 @@
 
         .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; }
         .toast.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-
-        .history-list-item { font-size: 0.9375rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;}
     </style>
 </head>
 <body>
 
     <div class="header-bar">
-        <div class="logo">Мои Запасы</div>
+        <div class="logo">Food4F</div>
         <button type="button" class="btn-settings-round" id="btnOpenSettings">
             <svg class="svg-icon" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -203,16 +189,11 @@
         </button>
     </div>
 
-    <div class="streak-card">
-        <div class="brand-font" style="font-size: 1.2rem;">Календарь расхода</div>
-        <div class="date-chip" id="currentDateChip">Сегодня</div>
-    </div>
-
     <div class="main-card">
         <div class="segmented-switch" id="tabSwitch" data-state="left">
             <div class="segmented-pill" id="tabPill"></div>
-            <button type="button" class="segmented-btn active" id="btnTabShelves">Полки</button>
-            <button type="button" class="segmented-btn" id="btnTabShopping">К покупке</button>
+            <button type="button" class="segmented-btn active" id="btnTabShelves">Куплено</button>
+            <button type="button" class="segmented-btn" id="btnTabShopping">Купить</button>
         </div>
 
         <div id="contentContainer"></div>
@@ -233,17 +214,15 @@
                 <input type="hidden" id="editId">
                 <div class="form-group">
                     <label>Название</label>
-                    <input type="text" id="inpName" placeholder="Название">
+                    <input type="text" id="inpName" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Категория</label>
-                    <select id="inpCat">
-                        <!-- Заполнится через JS -->
-                    </select>
+                    <select id="inpCat"></select>
                 </div>
                 <div class="form-group">
-                    <label>Заметка / Бренд (для умного поиска)</label>
-                    <input type="text" id="inpNote" placeholder="Бренд или заметка">
+                    <label>Заметка / Бренд</label>
+                    <input type="text" id="inpNote" placeholder="">
                 </div>
                 <button class="btn-add" id="btnDeleteForm" style="color: #C0392B; border-color: #C0392B; background: rgba(192,57,43,0.1); margin-top: 20px;">Удалить товар</button>
             </div>
@@ -274,37 +253,13 @@
                 
                 <div class="inset-list-group" style="margin-top: 24px;">
                     <div class="inset-list">
-                        <div class="inset-list-item" id="btnForceUpdate">
-                            <div class="inset-content">
-                                <div class="inset-label">Обновление</div>
-                                <div class="inset-sub">Версия 1.1</div>
-                            </div>
-                            <div class="inset-right">
-                                <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                            </div>
+                        <div class="inset-list-item center-action" id="btnForceUpdate">
+                            Обновить приложение
                         </div>
                     </div>
                 </div>
 
             </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно Календаря -->
-    <div class="modal-overlay" id="calendarModal">
-        <div class="modal-card">
-            <div class="modal-drag-handle"></div>
-            <div class="modal-header-nav">
-                <button class="modal-nav-btn" id="btnResetCal">Сегодня</button>
-                <div class="modal-nav-title brand-font">Календарь</div>
-                <button class="modal-nav-btn" id="btnCloseCal">Готово</button>
-            </div>
-            <div class="cal-header">
-                <button class="cal-nav-btn" id="calPrev"><svg class="svg-icon"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                <div class="cal-month-title" id="calMonthTitle"></div>
-                <button class="cal-nav-btn" id="calNext"><svg class="svg-icon"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-            </div>
-            <div class="cal-grid" id="calGrid"></div>
         </div>
     </div>
 
@@ -334,12 +289,9 @@
         ].map((p, i) => ({ id: i+1, name: p.n, cat: CATEGORIES[p.c], note: p.note || '', status: 'ok' }));
 
         let items = [];
-        let historyLog = []; 
         let currentTab = 'shelves';
-        let viewedDate = getTodayStr();
-        let calCurrentViewDate = new Date();
 
-        const STORE_KEYS = { items: 'stock_items_v2', history: 'stock_history_v2' };
+        const STORE_KEYS = { items: 'stock_items_v2' };
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -351,15 +303,6 @@
             get(key) { return new Promise(resolve => { if (tg.CloudStorage) tg.CloudStorage.getItem(key, (err, val) => resolve(val || null)); else resolve(null); }); }
         };
 
-        function getTodayStr(d) {
-            const date = d || new Date();
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
-        }
-
-        // Система сохранения с обходом лимита 4КБ CloudStorage через чанки
         async function saveToCloudChunked(key, dataObj) {
             const jsonStr = JSON.stringify(dataObj);
             const chunks = jsonStr.match(/.{1,3900}/g) || [];
@@ -382,66 +325,38 @@
         }
 
         function saveApp() {
-            // Мгновенное локальное сохранение - предотвращает сбросы при закрытии
             safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
-            safeStorage.set(STORE_KEYS.history, JSON.stringify(historyLog));
-            // Фоновая отправка в облако
             if (tg.CloudStorage) {
                 saveToCloudChunked('cloud_items_v2', items);
-                saveToCloudChunked('cloud_history_v2', historyLog);
             }
         }
 
         async function initApp() {
             populateCatSelect();
-            
-            // 1. Сначала грузим из LocalStorage для мгновенного отображения
             const localItems = safeStorage.get(STORE_KEYS.items);
-            const localHistory = safeStorage.get(STORE_KEYS.history);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
-            if (localHistory) { historyLog = JSON.parse(localHistory); }
+            
             render();
 
-            // 2. Затем проверяем Облако в фоне
             if (tg.CloudStorage) {
                 const cloudItems = await loadFromCloudChunked('cloud_items_v2');
                 if (cloudItems && cloudItems.length > 0) {
                     items = cloudItems;
                     render();
                 }
-                const cloudHistory = await loadFromCloudChunked('cloud_history_v2');
-                if (cloudHistory) {
-                    historyLog = cloudHistory;
-                    render();
-                }
-                // Синхронизируем локалку с актуальным облаком
                 safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
-                safeStorage.set(STORE_KEYS.history, JSON.stringify(historyLog));
             }
         }
 
-        // --- Логика рендера ---
         function render() {
-            const isToday = viewedDate === getTodayStr();
-            const dateObj = new Date(viewedDate);
-            document.getElementById('currentDateChip').innerText = isToday ? 'Сегодня' : dateObj.toLocaleDateString('ru-RU', {day: 'numeric', month: 'long'});
-            
             const container = document.getElementById('contentContainer');
             container.innerHTML = '';
-
-            if (!isToday) {
-                document.getElementById('tabSwitch').style.display = 'none';
-                document.getElementById('btnAddItem').style.display = 'none';
-                renderHistoryForDate(container);
+            if (currentTab === 'shelves') {
+                document.getElementById('btnAddItem').style.display = 'block';
+                renderShelves(container);
             } else {
-                document.getElementById('tabSwitch').style.display = 'flex';
-                if (currentTab === 'shelves') {
-                    document.getElementById('btnAddItem').style.display = 'block';
-                    renderShelves(container);
-                } else {
-                    document.getElementById('btnAddItem').style.display = 'none';
-                    renderShopping(container);
-                }
+                document.getElementById('btnAddItem').style.display = 'none';
+                renderShopping(container);
             }
         }
 
@@ -491,10 +406,11 @@
                                 <a href="https://www.ozon.ru/search/?text=${query}" class="store-btn" target="_blank">Ozon</a>
                                 <a href="https://market.yandex.ru/search?text=${query}" class="store-btn" target="_blank">Маркет</a>
                                 <a href="https://vkusvill.ru/search/?text=${query}" class="store-btn" target="_blank">ВкусВилл</a>
+                                <a href="https://samokat.ru/search?q=${query}" class="store-btn" target="_blank">Самокат</a>
                             </div>
                         </div>
-                        <button class="dot-btn dot-green" onclick="setStatus(${item.id}, 'ok')" style="opacity: 1; border: 1px solid var(--border-color); color: #fff; background: rgb(47, 139, 88);">
-                            <svg class="svg-icon" style="width: 14px; height: 14px; stroke: currentColor;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <button class="btn-check-done" onclick="setStatus(${item.id}, 'ok')">
+                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </button>
                     </div>`;
                 });
@@ -506,34 +422,15 @@
             }
         }
 
-        function renderHistoryForDate(container) {
-            const events = historyLog.filter(h => h.date === viewedDate);
-            if (events.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">В этот день ничего не заканчивалось.</div>`;
-                return;
-            }
-            container.innerHTML = `<div class="category-title">Закончилось в этот день:</div>`;
-            events.forEach(e => {
-                const dotClass = e.status === 'empty' ? 'dot-red' : 'dot-orange';
-                container.innerHTML += `<div class="history-list-item"><div class="dot-btn ${dotClass}" style="width: 12px; height: 12px; min-width: 12px; pointer-events: none; opacity: 1;"></div> ${e.name}</div>`;
-            });
-        }
-
         function setStatus(id, newStatus) {
             const item = items.find(i => i.id === id);
             if (item) {
                 item.status = newStatus;
-                if (newStatus !== 'ok') {
-                    const today = getTodayStr();
-                    const existingIdx = historyLog.findIndex(h => h.date === today && h.itemId === id);
-                    if (existingIdx > -1) { historyLog[existingIdx].status = newStatus; }
-                    else { historyLog.push({ date: today, itemId: id, name: item.name, status: newStatus }); }
-                }
-                saveApp(); render();
+                saveApp(); 
+                render();
             }
         }
 
-        // --- Работа с Формой (Добавление / Редактирование) ---
         function populateCatSelect() {
             const sel = document.getElementById('inpCat');
             CATEGORIES.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
@@ -582,44 +479,6 @@
             saveApp(); render(); closeModal(document.getElementById('formModal'));
         };
 
-        // --- Календарь ---
-        function renderCalendar() {
-            const year = calCurrentViewDate.getFullYear();
-            const month = calCurrentViewDate.getMonth();
-            const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-            document.getElementById('calMonthTitle').innerText = `${monthNames[month]} ${year}`;
-
-            const grid = document.getElementById('calGrid'); grid.innerHTML = '';
-            ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].forEach(dn => grid.innerHTML += `<div class="cal-day-name">${dn}</div>`);
-
-            let startDay = new Date(year, month, 1).getDay() - 1; if (startDay === -1) startDay = 6;
-            for (let i = 0; i < startDay; i++) grid.innerHTML += `<div></div>`;
-
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const todayStr = getTodayStr();
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const curStr = getTodayStr(new Date(year, month, d));
-                const isSelected = (curStr === viewedDate);
-                const hasEvent = historyLog.some(h => h.date === curStr);
-                const isFuture = curStr > todayStr;
-                
-                let cellClass = 'cal-day-cell';
-                if (isSelected) cellClass += ' selected';
-                if (hasEvent && !isSelected) cellClass += ' has-event';
-                if (isFuture) cellClass += ' disabled';
-
-                grid.innerHTML += `<div class="${cellClass}" ${isFuture?'':'onclick="selectDate(\''+curStr+'\')"'} >${d}</div>`;
-            }
-        }
-
-        window.selectDate = (str) => { viewedDate = str; render(); closeModal(document.getElementById('calendarModal')); };
-
-        document.getElementById('currentDateChip').onclick = () => { calCurrentViewDate = new Date(viewedDate); renderCalendar(); openModal(document.getElementById('calendarModal')); };
-        document.getElementById('calPrev').onclick = () => { calCurrentViewDate.setMonth(calCurrentViewDate.getMonth() - 1); renderCalendar(); };
-        document.getElementById('calNext').onclick = () => { calCurrentViewDate.setMonth(calCurrentViewDate.getMonth() + 1); renderCalendar(); };
-        document.getElementById('btnResetCal').onclick = () => { selectDate(getTodayStr()); };
-
         // --- Вкладки (Switch) ---
         document.getElementById('btnTabShelves').onclick = () => {
             currentTab = 'shelves';
@@ -653,15 +512,14 @@
         document.getElementById('btnOpenSettings').onclick = () => openModal(document.getElementById('settingsModal'));
         document.getElementById('btnCloseSettings').onclick = () => closeModal(document.getElementById('settingsModal'));
         document.getElementById('btnCancelForm').onclick = () => closeModal(document.getElementById('formModal'));
-        document.getElementById('btnCloseCal').onclick = () => closeModal(document.getElementById('calendarModal'));
         document.getElementById('btnAddItem').onclick = () => openForm(null);
 
+        // Обновление приложения (жесткая перезагрузка)
         document.getElementById('btnForceUpdate').onclick = () => {
             showToast('Обновление...');
             setTimeout(() => {
-                // Перезагрузка страницы с сохранением кэша локалки
-                window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
-            }, 500);
+                window.location.replace(window.location.pathname + "?v=" + Date.now());
+            }, 300);
         };
 
         function showToast(msg) {
