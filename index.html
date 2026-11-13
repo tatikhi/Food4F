@@ -344,11 +344,10 @@
             <div class="modal-body-scrollable">
 
                 <div class="form-group" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
-                    <label>Синхронизация с семьей</label>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.3;">Используйте эти кнопки для передачи списка мужу. Код содержит все товары и категории.</p>
+                    <label>Синхронизация</label>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-sync" onclick="openExportModal()">Скопировать мой код</button>
-                        <button type="button" class="btn-sync" onclick="openImportModal()">Ввести код мужа</button>
+                        <button type="button" class="btn-sync" onclick="openExportModal()">Сгенерировать код</button>
+                        <button type="button" class="btn-sync" onclick="openImportModal()">Ввести код</button>
                     </div>
                 </div>
                 
@@ -356,7 +355,7 @@
                     <label>Категории</label>
                     <div id="catSettingsList" class="cat-settings-list"></div>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
-                        <input type="text" id="inpNewCat" placeholder="Название новой категории" style="flex:1;">
+                        <input type="text" id="inpNewCat" placeholder="Новая категория" style="flex:1;">
                         <button type="button" id="btnAddCat" style="background: var(--ios-blue); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-weight: 600; cursor: pointer;">Добавить</button>
                     </div>
                 </div>
@@ -381,11 +380,10 @@
             <div class="modal-drag-handle"></div>
             <div class="modal-header-nav">
                 <div></div>
-                <div class="modal-nav-title brand-font">Ваш код списка</div>
+                <div class="modal-nav-title brand-font">Код для синхронизации</div>
                 <button class="modal-nav-btn" onclick="closeModal(document.getElementById('exportModal'))">Закрыть</button>
             </div>
             <div class="modal-body-scrollable">
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">Нажмите «Скопировать» и отправьте этот текст мужу сообщением.</p>
                 <textarea id="exportTextarea" readonly></textarea>
                 <button class="btn-primary-action" onclick="copyCodeToClipboard()">Скопировать код</button>
             </div>
@@ -402,8 +400,7 @@
                 <div></div>
             </div>
             <div class="modal-body-scrollable">
-                <p style="font-size: 0.9rem; color: var(--red, #CD3434); margin-bottom: 12px; line-height: 1.4; font-weight: 600;">Внимание: это полностью заменит ваш текущий список на тот, что прислал муж.</p>
-                <textarea id="importTextarea" placeholder="Вставьте присланный длинный код сюда..."></textarea>
+                <textarea id="importTextarea" placeholder="Вставьте код сюда..."></textarea>
                 <button class="btn-primary-action" onclick="applyImportCode()">Применить список</button>
             </div>
         </div>
@@ -431,9 +428,12 @@
         let CATEGORIES = [];
         let collapsedCategories = JSON.parse(localStorage.getItem('cb_collapsed') || '{}');
 
-        // Обновленные ссылки с параметрами для открытия напрямую (через tg.openLink)
+        // Карты для сжатия
+        const STORE_MAP = ['none', 'ozon', 'lavka', 'vkusvill', 'samokat'];
+        const STATUS_MAP = ['ok', 'soon', 'empty'];
+
         const STORES = {
-            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?category=25000&text=' },
+            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
             'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' },
             'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
             'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
@@ -514,7 +514,6 @@
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
-            // Удаляем Маркет, принудительно переводим все товары с 'market' на 'lavka'
             items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; });
             
             document.getElementById('quickSort').value = sortPref;
@@ -545,22 +544,33 @@
             }
         }
 
-        // ОТКРЫТИЕ ССЫЛОК: Использует системный метод Telegram для переадресации в приложения ОС (iOS/Android)
+        // ОТКРЫТИЕ ССЫЛОК: Невидимый клик заставляет iOS/Safari перехватывать ссылку и открывать приложения
         window.openStoreLink = (url) => {
-            if (tg.openLink) {
-                tg.openLink(url); 
-            } else {
-                window.open(url, '_blank');
-            }
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         };
 
-        // --- НОВЫЕ ОКНА СИНХРОНИЗАЦИИ ---
+        // --- УЛЬТРА-СЖАТАЯ СИНХРОНИЗАЦИЯ ---
         window.openExportModal = () => {
-            const data = {
-                c: CATEGORIES,
-                i: items.map(it => ({ id: it.id, n: it.name, c: it.cat, no: it.note, s: it.status, st: it.store }))
-            };
-            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+            // Форматируем элементы в крошечные массивы вместо объектов
+            const compactItems = items.map(it => [
+                it.id,
+                it.name,
+                CATEGORIES.indexOf(it.cat) > -1 ? CATEGORIES.indexOf(it.cat) : 0,
+                it.note || '',
+                STATUS_MAP.indexOf(it.status) > -1 ? STATUS_MAP.indexOf(it.status) : 0,
+                STORE_MAP.indexOf(it.store) > -1 ? STORE_MAP.indexOf(it.store) : 0
+            ]);
+            
+            const payload = [CATEGORIES, compactItems];
+            const str = JSON.stringify(payload);
+            const encoded = btoa(unescape(encodeURIComponent(str)));
+            
             document.getElementById('exportTextarea').value = encoded;
             openModal(document.getElementById('exportModal'));
         };
@@ -591,7 +601,20 @@
                 const str = decodeURIComponent(escape(atob(code)));
                 const data = JSON.parse(str);
                 
-                if (data && data.c && data.i) {
+                // Поддержка нового компактного формата
+                if (Array.isArray(data) && data.length === 2) {
+                    CATEGORIES = data[0];
+                    items = data[1].map(it => ({
+                        id: it[0],
+                        name: it[1],
+                        cat: CATEGORIES[it[2]] || CATEGORIES[0],
+                        note: it[3],
+                        status: STATUS_MAP[it[4]] || 'ok',
+                        store: STORE_MAP[it[5]] || 'none'
+                    }));
+                } 
+                // Поддержка старого длинного формата (на всякий случай)
+                else if (data && data.c && data.i) {
                     CATEGORIES = data.c;
                     items = data.i.map(it => ({
                         id: it.id || Date.now(),
@@ -601,16 +624,17 @@
                         status: it.s || 'ok',
                         store: it.st || 'none'
                     }));
-                    saveApp();
-                    saveCategories();
-                    render();
-                    closeModal(document.getElementById('importModal'));
-                    showToast("Ваш список успешно обновлен!");
                 } else {
-                    showToast("Неверный формат кода.");
+                    return showToast("Неверный формат кода.");
                 }
+                
+                saveApp();
+                saveCategories();
+                render();
+                closeModal(document.getElementById('importModal'));
+                showToast("Успешно обновлено!");
             } catch(e) {
-                showToast("Ошибка чтения. Проверьте, полностью ли скопирован код.");
+                showToast("Ошибка чтения кода. Проверьте, полностью ли скопирован.");
             }
         };
         // ---------------------------------
@@ -625,7 +649,6 @@
             });
         }
 
-        // Поиск строго по началу первого слова названия
         function isMatchSearch(item, queryStr) {
             if (!queryStr) return true;
             const nameLower = item.name.toLowerCase().trim();
@@ -858,7 +881,6 @@
             saveCategories();
         };
 
-        // --- ФОРМА И МОДАЛКИ ---
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
             if (id) {
