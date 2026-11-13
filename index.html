@@ -37,16 +37,6 @@
             --accent-main: #2B78A3; --accent-light: #DCECF5; --border-color: #B9D5E6;
             --shadow-soft: 0 2px 8px rgba(43, 120, 163, 0.08); --icon-inactive: #90AEC2; --ios-blue: #007AFF;
         }
-        [data-theme="espresso"] {
-            --bg-main: #F8F4EE; --surface: #FFFFFF; --text-primary: #2B211A; --text-secondary: #5C4C40;
-            --accent-main: #6F4E37; --accent-light: #ECE1D7; --border-color: #D9C8B8;
-            --shadow-soft: 0 2px 8px rgba(111, 78, 55, 0.08); --icon-inactive: #AFA093; --ios-blue: #007AFF;
-        }
-        [data-theme="cyberglow"] {
-            --bg-main: #F5F0FE; --surface: #FFFFFF; --text-primary: #1F1135; --text-secondary: #523D70;
-            --accent-main: #8A5CF5; --accent-light: #EBE1FF; --border-color: #D3C2F8;
-            --shadow-soft: 0 2px 8px rgba(138, 92, 245, 0.08); --icon-inactive: #A692CD; --ios-blue: #0A84FF;
-        }
         [data-theme="midnight"] {
             --bg-main: #0F141C; --surface: #161D2B; --text-primary: #F0F5FF; --text-secondary: #8E9EB8;
             --accent-main: #4E9EFF; --accent-light: #1A2E4A; --border-color: #23324A;
@@ -72,6 +62,7 @@
             caret-color: var(--accent-main);
             width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); 
             background: var(--surface); color: var(--text-primary); font-size: 16px !important; outline: none;
+            -webkit-appearance: none; appearance: none;
         }
 
         .svg-icon {
@@ -97,6 +88,11 @@
         .segmented-btn { position: relative; z-index: 2; flex: 1; padding: 10px 8px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--text-secondary); border: none; background: transparent; font-weight: 600; font-size: 1rem; transition: color 0.25s; }
         .segmented-btn.active { color: var(--text-primary); }
 
+        /* СТРОКА ПОИСКА */
+        .search-bar-wrapper { position: relative; margin-bottom: 16px; width: 100%; }
+        .search-bar-wrapper input { padding-left: 40px; border-radius: 10px; background: var(--bg-main); border: 1px solid var(--border-color); }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--icon-inactive); width: 18px; height: 18px; }
+
         /* СПИСКИ ТОВАРОВ */
         .category-title { font-family: 'Alice', serif; font-size: 1.15rem; color: var(--text-primary); margin: 16px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; align-items: center; gap: 8px; }
         
@@ -119,10 +115,16 @@
         .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
         .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
 
-        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК */
-        .btn-check-done { background: rgb(47, 139, 88); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .btn-check-done:active { opacity: 0.8; }
-        .btn-check-done svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2.5; fill: none; }
+        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК (Пустой кружок) */
+        .btn-check-done { 
+            background: transparent; border: 2px solid var(--icon-inactive); 
+            width: 30px; height: 30px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; flex-shrink: 0; color: var(--icon-inactive);
+            transition: 0.2s;
+        }
+        .btn-check-done:active { opacity: 0.6; background: var(--bg-main); }
+        .btn-check-done svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
         /* МАГАЗИНЫ И ССЫЛКИ */
         .store-links { margin-top: 12px; }
@@ -153,9 +155,11 @@
         .inset-list-item.center-action { justify-content: center; color: var(--ios-blue); font-weight: 600; }
 
         /* МОДАЛЬНЫЕ ОКНА */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: 0.25s ease; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active-modal { opacity: 1; }
-        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
+        
+        /* Исправлен transition, чтобы реагировал только на transform (убирает дергание при появлении клавиатуры) */
+        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 85%; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
         .modal-overlay.active-modal .modal-card { transform: translateY(0); }
         
         .modal-drag-handle { width: 100%; padding: 12px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; }
@@ -168,13 +172,13 @@
         .modal-body-scrollable { overflow-y: auto; padding-bottom: 20px; }
 
         /* НАСТРОЙКИ (ТЕМЫ) */
-        .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
         .theme-card-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 12px; background: var(--bg-main); border: 1px solid var(--border-color); cursor: pointer; }
-        .theme-card-btn.active { border-color: var(--accent-main); background: var(--accent-light); }
+        .theme-card-btn.active { border-color: var(--accent-main); background: var(--accent-light); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .theme-preview-box { width: 100%; height: 28px; border-radius: 8px; display: flex; overflow: hidden; border: 1px solid rgba(128, 128, 128, 0.3); }
         .theme-preview-bg { flex: 2; }
         .theme-preview-accent { flex: 1; }
-        .theme-card-title { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
+        .theme-card-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
 
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
@@ -200,6 +204,11 @@
             <div class="segmented-pill" id="tabPill"></div>
             <button type="button" class="segmented-btn active" id="btnTabShelves">Куплено</button>
             <button type="button" class="segmented-btn" id="btnTabShopping">Купить</button>
+        </div>
+
+        <div class="search-bar-wrapper" id="searchWrapper">
+            <svg class="svg-icon search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="Поиск в запасах...">
         </div>
 
         <div id="contentContainer"></div>
@@ -256,14 +265,22 @@
                 <button class="modal-nav-btn" id="btnCloseSettings">Готово</button>
             </div>
             <div class="modal-body-scrollable">
+                
+                <!-- Новая настройка сортировки -->
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label>Сортировка товаров (внутри категории)</label>
+                    <select id="inpSortPref">
+                        <option value="date">По дате добавления</option>
+                        <option value="alpha">По алфавиту</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label>Тема оформления</label>
                     <div class="theme-grid" id="themeRow">
                         <button class="theme-card-btn" data-theme="sunlit"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #FFF5F0;"></div><div class="theme-preview-accent" style="background: #E87A5D;"></div></div><span class="theme-card-title">Sunlit</span></button>
                         <button class="theme-card-btn" data-theme="berry"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #1D161E;"></div><div class="theme-preview-accent" style="background: #D96B94;"></div></div><span class="theme-card-title">Berry</span></button>
-                        <button class="theme-card-btn" data-theme="icederm"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #F0F6FA;"></div><div class="theme-preview-accent" style="background: #2B78A3;"></div></div><span class="theme-card-title">Ice Derm</span></button>
-                        <button class="theme-card-btn" data-theme="espresso"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #F8F4EE;"></div><div class="theme-preview-accent" style="background: #6F4E37;"></div></div><span class="theme-card-title">Espresso</span></button>
-                        <button class="theme-card-btn" data-theme="cyberglow"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #F5F0FE;"></div><div class="theme-preview-accent" style="background: #8A5CF5;"></div></div><span class="theme-card-title">Cyber Glow</span></button>
+                        <button class="theme-card-btn" data-theme="icederm"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #F0F6FA;"></div><div class="theme-preview-accent" style="background: #2B78A3;"></div></div><span class="theme-card-title">Ice Dream</span></button>
                         <button class="theme-card-btn" data-theme="midnight"><div class="theme-preview-box"><div class="theme-preview-bg" style="background: #0F141C;"></div><div class="theme-preview-accent" style="background: #4E9EFF;"></div></div><span class="theme-card-title">Midnight</span></button>
                     </div>
                 </div>
@@ -286,9 +303,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const CATEGORIES = ["Холодильник", "Кухня", "NonFood"];
+        // 4 основные категории
+        const CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood"];
 
-        // Настройки магазинов (Лавка через маркет с параметром &text=)
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?text=' },
             'market': { label: 'Я.Маркет', url: 'https://market.yandex.ru/search?text=' },
@@ -297,7 +314,6 @@
             'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
         };
 
-        // ПОЛНЫЙ СПИСОК (58 позиций), всё в категории Холодильник
         const initialProducts = [
             {n: "Томаты"}, {n: "Огурцы"}, {n: "Яблоки"}, {n: "Бананы"},
             {n: "Брокколи"}, {n: "Тыква", note: "нарезанная"}, {n: "Морковь", note: "кубиками"}, {n: "Черника / Смородина чёрная"}, {n: "Картофель фри"}, {n: "Вареники", note: "с картофелем и грибами"}, {n: "Сырники", note: "из рикотты"}, {n: "Лепёшки роти", note: "слоёные / с зелёным луком"}, {n: "Тесто слоёное бездрожжевое"}, {n: "Тесто слоёное дрожжевое"}, {n: "Булочки", note: "для бургеров / с кунжутом"},
@@ -312,9 +328,10 @@
 
         let items = [];
         let currentTab = 'shelves';
+        let searchQuery = '';
+        let sortPref = localStorage.getItem('cb_sort') || 'date';
 
-        // Инкремент версии хранилища (v4) гарантирует, что 58 товаров точно появятся у вас при первом запуске
-        const STORE_KEYS = { items: 'stock_items_v4' };
+        const STORE_KEYS = { items: 'stock_items_v4' }; 
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -359,6 +376,14 @@
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
+            // Настраиваем переключатель сортировки
+            document.getElementById('inpSortPref').value = sortPref;
+            document.getElementById('inpSortPref').onchange = (e) => {
+                sortPref = e.target.value;
+                localStorage.setItem('cb_sort', sortPref);
+                render();
+            };
+
             render();
 
             if (tg.CloudStorage) {
@@ -371,25 +396,57 @@
             }
         }
 
+        function sortItemsList(list) {
+            return list.sort((a, b) => {
+                if (sortPref === 'alpha') {
+                    return a.name.localeCompare(b.name, 'ru');
+                } else {
+                    return a.id - b.id; // Чем меньше ID (timestamp), тем старше товар
+                }
+            });
+        }
+
         function render() {
             const container = document.getElementById('contentContainer');
             container.innerHTML = '';
             if (currentTab === 'shelves') {
+                document.getElementById('searchWrapper').style.display = 'block';
                 document.getElementById('btnAddItem').style.display = 'block';
                 renderShelves(container);
             } else {
+                document.getElementById('searchWrapper').style.display = 'none';
                 document.getElementById('btnAddItem').style.display = 'none';
+                searchQuery = '';
+                document.getElementById('searchInput').value = '';
                 renderShopping(container);
             }
         }
 
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderShelves(document.getElementById('contentContainer'));
+        });
+
         function renderShelves(container) {
-            const allCats = Array.from(new Set([...CATEGORIES, ...items.map(i => i.cat)]));
+            container.innerHTML = ''; 
+            
+            let filteredItems = searchQuery 
+                ? items.filter(i => i.name.toLowerCase().includes(searchQuery) || (i.note && i.note.toLowerCase().includes(searchQuery)))
+                : [...items];
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">Ничего не найдено</div>`;
+                return;
+            }
+
+            const allCats = Array.from(new Set([...CATEGORIES, ...filteredItems.map(i => i.cat)]));
             
             allCats.forEach(cat => {
-                const catItems = items.filter(i => i.cat === cat);
+                let catItems = filteredItems.filter(i => i.cat === cat);
                 if (catItems.length === 0) return;
                 
+                catItems = sortItemsList(catItems);
+
                 let html = `<div class="category-title">${cat}</div>`;
                 catItems.forEach(item => {
                     html += `
@@ -411,14 +468,16 @@
 
         function renderShopping(container) {
             const urgencies = [
-                { id: 'empty', label: 'Срочно (Закончилось)', color: 'var(--red, #CD3434)' },
-                { id: 'soon', label: 'Планово (Заканчивается)', color: 'var(--orange, #D7871E)' }
+                { id: 'empty', label: 'Закончилось', color: 'var(--red, #CD3434)' },
+                { id: 'soon', label: 'Заканчивается', color: 'var(--orange, #D7871E)' }
             ];
             
             urgencies.forEach(urg => {
-                const list = items.filter(i => i.status === urg.id);
+                let list = items.filter(i => i.status === urg.id);
                 if (list.length === 0) return;
                 
+                list = sortItemsList(list);
+
                 const svgAlert = `<svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 4px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg>`;
                 let html = `<div class="category-title">${svgAlert} ${urg.label}</div>`;
                 
@@ -535,6 +594,15 @@
             items = items.filter(i => i.id != id);
             saveApp(); render(); closeModal(document.getElementById('formModal'));
         };
+
+        // --- Закрытие окон по тапу вне формы (на затемненный фон) ---
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal(overlay);
+                }
+            });
+        });
 
         // --- Вкладки (Switch) ---
         document.getElementById('btnTabShelves').onclick = () => {
