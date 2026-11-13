@@ -8,7 +8,7 @@
     <script>
         (function() {
             try {
-                var savedTheme = localStorage.getItem('food4f_theme') || 'sunlit';
+                var savedTheme = localStorage.getItem('homyak_theme') || localStorage.getItem('food4f_theme') || 'sunlit';
                 document.documentElement.setAttribute('data-theme', savedTheme);
             } catch(e) {}
         })();
@@ -443,7 +443,7 @@
         updateViewportHeight();
 
         let CATEGORIES = [];
-        let collapsedCategories = JSON.parse(localStorage.getItem('homyak_collapsed') || '{}');
+        let collapsedCategories = JSON.parse(localStorage.getItem('homyak_collapsed') || localStorage.getItem('food4f_collapsed') || '{}');
 
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
@@ -459,7 +459,7 @@
 
         let items = [];
         let currentTab = 'shelves';
-        let sortPref = localStorage.getItem('homyak_sort') || 'date';
+        let sortPref = localStorage.getItem('homyak_sort') || localStorage.getItem('food4f_sort') || 'date';
         let searchQuery = '';
         
         let filterOrange = false;
@@ -522,28 +522,44 @@
         }
 
         async function initApp() {
-            // МИГРАЦИЯ СО СТАРЫХ КЛЮЧЕЙ ЕСЛИ НОВЫЕ ПУСТЫЕ
-            if (!safeStorage.get(STORE_KEYS.items)) {
-                const oldItems = safeStorage.get('stock_items_v4') || safeStorage.get('food4f_items') || safeStorage.get('stock_items');
-                if (oldItems) safeStorage.set(STORE_KEYS.items, oldItems);
-            }
-            if (!safeStorage.get(STORE_KEYS.cats)) {
-                const oldCats = safeStorage.get('stock_cats_v1') || safeStorage.get('food4f_cats');
-                if (oldCats) safeStorage.set(STORE_KEYS.cats, oldCats);
+            // ПРИНУДИТЕЛЬНЫЙ ПОИСК И ВОССТАНОВЛЕНИЕ СТАРЫХ ДАННЫХ ИЗ ЛЮБЫХ ПРЕЖНИХ КЛЮЧЕЙ
+            const oldDataRaw = safeStorage.get('stock_items_v4') || safeStorage.get('food4f_items') || safeStorage.get('stock_items');
+            if (oldDataRaw) {
+                try {
+                    const parsedOld = JSON.parse(oldDataRaw);
+                    if (Array.isArray(parsedOld) && parsedOld.length > 0) {
+                        items = parsedOld;
+                        safeStorage.set(STORE_KEYS.items, JSON.stringify(items)); // перезаписываем актуальный ключ вашей реальной базой
+                    }
+                } catch(e) {}
             }
 
+            const oldCatsRaw = safeStorage.get('stock_cats_v1') || safeStorage.get('food4f_cats');
+            if (oldCatsRaw) {
+                try {
+                    const parsedCats = JSON.parse(oldCatsRaw);
+                    if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+                        CATEGORIES = parsedCats;
+                        safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
+                    }
+                } catch(e) {}
+            }
+
+            // Если в старых ключах ничего не было, берем из текущих
             const localCats = safeStorage.get(STORE_KEYS.cats);
-            if (localCats) {
-                try { CATEGORIES = JSON.parse(localCats); } catch(e) { CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"]; }
-            } else {
+            if (localCats && CATEGORIES.length === 0) {
+                try { CATEGORIES = JSON.parse(localCats); } catch(e) {}
+            }
+            if (CATEGORIES.length === 0) {
                 CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"];
                 saveCategories();
             }
 
             const localItems = safeStorage.get(STORE_KEYS.items);
-            if (localItems) { 
-                try { items = JSON.parse(localItems); } catch(e) { items = initialProducts; }
-            } else { 
+            if (localItems && items.length === 0) { 
+                try { items = JSON.parse(localItems); } catch(e) {}
+            } 
+            if (items.length === 0) {
                 items = initialProducts; 
                 saveApp(); 
             }
@@ -571,8 +587,9 @@
                 const cloudItems = await loadFromCloudChunked('cloud_homyak_items_v5');
                 const cloudCats = await loadFromCloudChunked('cloud_homyak_cats_v2');
                 
-                if (cloudCats && cloudCats.length > 0) CATEGORIES = cloudCats;
-                if (cloudItems && cloudItems.length > 0) items = cloudItems;
+                // Облако берем только если там больше или столько же элементов, чтобы не затереть локальные
+                if (cloudCats && cloudCats.length >= CATEGORIES.length) CATEGORIES = cloudCats;
+                if (cloudItems && cloudItems.length >= items.length) items = cloudItems;
                 
                 syncCategoriesWithItems();
 
