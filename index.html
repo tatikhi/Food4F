@@ -136,9 +136,11 @@
         .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
         
         .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
-        .store-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; color: #FFF; border-radius: 4px; padding: 2px 5px; flex-shrink: 0; }
-        .badge-ozon { background: #005BFF; }
-        .badge-lavka { background: #FFCC00; color: #000; }
+        
+        /* Цвета бейджиков */
+        .store-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; color: #FFF; border-radius: 4px; padding: 2px 5.5px; flex-shrink: 0; line-height: 1.2;}
+        .badge-ozon { background: #E81467; } /* Ozon Fresh Magenta */
+        .badge-lavka { background: #FFCC00; color: #000; } /* Yandex Market Yellow */
         
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
@@ -178,10 +180,20 @@
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
 
+        /* НОВЫЙ БЛОК НАПОМИНАНИЙ С ПЛАШКАМИ */
         .reminder-banner {
-            background: var(--accent-light); color: var(--accent-main); padding: 12px 14px;
-            border-radius: 12px; font-size: 0.85rem; font-weight: 600; text-align: center; 
-            margin-bottom: 16px; border: 1px dashed var(--accent-main); line-height: 1.4;
+            background: var(--accent-light); border: 1px dashed var(--accent-main); padding: 12px;
+            border-radius: 12px; text-align: center; margin-bottom: 16px;
+        }
+        .reminder-banner-title {
+            font-size: 0.85rem; font-weight: 600; color: var(--accent-main); margin-bottom: 10px;
+        }
+        .reminder-chips {
+            display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+        }
+        .reminder-chip {
+            background: var(--surface); color: var(--accent-main); border: 1px solid var(--accent-main);
+            padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;
         }
 
         /* СИНХРОНИЗАЦИЯ */
@@ -329,7 +341,7 @@
                     <select id="inpStore">
                         <option value="none">Не выбран</option>
                         <option value="ozon">Ozon Fresh</option>
-                        <option value="lavka">Яндекс Лавка</option>
+                        <option value="lavka">Яндекс Маркет</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -443,7 +455,7 @@
 
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
-            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' }
+            'lavka': { label: 'Я.Маркет', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' }
         };
 
         const initialProducts = [
@@ -504,7 +516,6 @@
             render();
         }
 
-        // ФУНКЦИЯ-САНИТАР: проверяет, не потерялись ли категории из официального списка
         function syncCategoriesWithItems() {
             let changed = false;
             items.forEach(i => {
@@ -533,7 +544,6 @@
                 if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none';
             });
             
-            // Вызываем принудительную синхронизацию категорий
             syncCategoriesWithItems();
 
             document.getElementById('quickSort').value = sortPref;
@@ -555,7 +565,6 @@
                 if (cloudCats && cloudCats.length > 0) CATEGORIES = cloudCats;
                 if (cloudItems && cloudItems.length > 0) items = cloudItems;
                 
-                // Вызываем принудительную синхронизацию после загрузки из облака
                 syncCategoriesWithItems();
 
                 safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
@@ -639,9 +648,7 @@
                 
                 items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none'; });
 
-                // Вызываем принудительную синхронизацию категорий при импорте чужого кода
                 syncCategoriesWithItems();
-
                 saveApp(); saveCategories(); render();
                 closeModal(document.getElementById('importModal'));
                 showToast("Успешно обновлено!");
@@ -724,8 +731,8 @@
 
                 catItems.forEach(item => {
                     let storeBadge = '';
-                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">О</span>';
-                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">Я</span>';
+                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">f</span>';
+                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">М</span>';
 
                     html += `
                     <div class="routine-item" onclick="openForm(${item.id})">
@@ -746,7 +753,16 @@
         }
 
         function renderShopping(container) {
-            container.innerHTML += `<div class="reminder-banner">Доп. площадки: Самокат / ВкусВилл / Т-Банк Город / Перекрёсток</div>`;
+            container.innerHTML += `
+            <div class="reminder-banner">
+                <div class="reminder-banner-title">Дополнительные площадки:</div>
+                <div class="reminder-chips">
+                    <span class="reminder-chip">Самокат</span>
+                    <span class="reminder-chip">ВкусВилл</span>
+                    <span class="reminder-chip">Т-Банк Город</span>
+                    <span class="reminder-chip">Перекрёсток</span>
+                </div>
+            </div>`;
 
             const urgencies = [
                 { id: 'empty', label: 'Закончилось', color: 'var(--red, #CD3434)' },
@@ -768,8 +784,8 @@
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
                     
                     let storeBadge = '';
-                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">О</span>';
-                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">Я</span>';
+                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">f</span>';
+                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">М</span>';
 
                     let linksHtml = '';
                     if (item.store && STORES[item.store]) {
