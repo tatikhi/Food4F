@@ -52,7 +52,7 @@
         body {
             background-color: var(--bg-main); color: var(--text-primary);
             min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            padding: 20px 14px 100px; font-size: 16px; /* 100px чтобы скролл не перекрывал нижние карточки */
+            padding: 20px 14px 100px; font-size: 16px; 
         }
 
         body.theme-animated * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
@@ -154,25 +154,25 @@
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
 
         /* ИНТЕРФЕЙС НАСТРОЕК & КАТЕГОРИЙ */
-        .inset-list-group { margin-bottom: 20px; width: 100%; }
-        .inset-list { background: var(--surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; }
-        .inset-list-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 1rem; color: var(--text-primary); cursor: pointer; transition: background 0.2s ease; }
-        .inset-list-item:last-child { border-bottom: none; }
-        .inset-list-item:active { background: var(--bg-main); }
-        .inset-list-item.center-action { justify-content: center; color: var(--ios-blue); font-weight: 600; }
-
         .cat-settings-list { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
         .cat-item-setting { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border-color); }
         .cat-item-setting:last-child { border-bottom: none; }
-        .cat-item-setting span { font-weight: 500; font-size: 0.95rem; }
-        .cat-item-setting-del { color: var(--red, #CD3434); background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.7; }
-        .cat-item-setting-del:active { opacity: 1; }
+        .cat-item-setting-content { flex: 1; display: flex; align-items: center; gap: 8px; }
+        .cat-item-setting-name { font-weight: 500; font-size: 0.95rem; }
+        .cat-item-setting-input { display: none; flex: 1; padding: 4px 8px; border: 1px solid var(--accent-main); border-radius: 6px; font-size: 0.95rem; }
+        .cat-item-actions { display: flex; gap: 12px; align-items: center; }
+        .cat-item-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.6; display: flex; align-items: center; justify-content: center; }
+        .cat-item-btn:active { opacity: 1; }
+        .cat-item-btn.edit { color: var(--ios-blue); }
+        .cat-item-btn.save { color: rgb(47, 139, 88); display: none; }
+        .cat-item-btn.del { color: var(--red, #CD3434); }
 
         /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active-modal { opacity: 1; }
         
-        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
+        /* Изменено: Модальное окно теперь на 100% высоты минус 20px, чтобы скроллинг работал правильно с клавиатурой */
+        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; height: calc(100vh - 20px); display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
         .modal-overlay.active-modal .modal-card { transform: translateY(0); }
         
         .modal-drag-handle { width: 100%; padding: 12px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; }
@@ -182,8 +182,7 @@
         .modal-nav-btn { background: transparent; border: none; color: var(--accent-main); font-size: 1.05rem; font-weight: 600; cursor: pointer; }
         .modal-nav-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
 
-        /* Огромный padding-bottom позволяет скроллить контент вверх, чтобы клавиатура его не закрывала */
-        .modal-body-scrollable { overflow-y: auto; padding-bottom: 60vh; flex: 1; }
+        .modal-body-scrollable { overflow-y: auto; padding-bottom: 40px; flex: 1; }
 
         /* НАСТРОЙКИ (ТЕМЫ) */
         .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
@@ -219,40 +218,43 @@
 </head>
 <body>
 
-    <div class="header-bar">
-        <div class="logo">Food4F</div>
-        <button type="button" class="btn-settings-round" id="btnOpenSettings">
-            <svg class="svg-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09A1.65 1.65 0 0 0 19.4 15z"></path>
-            </svg>
-        </button>
-    </div>
+    <!-- Слушатель для сворачивания клавиатуры при тапе вне строки поиска -->
+    <div id="appContainer" style="width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center;">
 
-    <div class="main-card">
-        <div class="segmented-switch" id="tabSwitch" data-state="left">
-            <div class="segmented-pill" id="tabPill"></div>
-            <button type="button" class="segmented-btn active" id="btnTabShelves">Куплено</button>
-            <button type="button" class="segmented-btn" id="btnTabShopping">Купить</button>
+        <div class="header-bar">
+            <div class="logo">Food4F</div>
+            <button type="button" class="btn-settings-round" id="btnOpenSettings">
+                <svg class="svg-icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09A1.65 1.65 0 0 0 19.4 15z"></path>
+                </svg>
+            </button>
         </div>
 
-        <!-- УПРАВЛЕНИЕ: Поиск и Сортировка -->
-        <div class="controls-row" id="controlsRow">
-            <div class="search-bar-wrapper">
-                <svg class="svg-icon search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="searchInput" placeholder="Поиск в запасах...">
+        <div class="main-card">
+            <div class="segmented-switch" id="tabSwitch" data-state="left">
+                <div class="segmented-pill" id="tabPill"></div>
+                <button type="button" class="segmented-btn active" id="btnTabShelves">Куплено</button>
+                <button type="button" class="segmented-btn" id="btnTabShopping">Купить</button>
             </div>
-            <select id="quickSort" class="sort-select">
-                <option value="date">По дате</option>
-                <option value="alpha">А-Я (Алфавит)</option>
-            </select>
+
+            <div class="controls-row" id="controlsRow">
+                <div class="search-bar-wrapper">
+                    <svg class="svg-icon search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="searchInput" placeholder="Поиск в запасах...">
+                </div>
+                <select id="quickSort" class="sort-select">
+                    <option value="date">По дате</option>
+                    <option value="alpha">А-Я (Алфавит)</option>
+                </select>
+            </div>
+
+            <button class="btn-add" id="btnAddItem" style="display: none;">+ Добавить новый товар</button>
+
+            <div id="contentContainer"></div>
         </div>
 
-        <!-- Кнопка добавлена сверху списка -->
-        <button class="btn-add" id="btnAddItem" style="display: none;">+ Добавить новый товар</button>
-
-        <div id="contentContainer"></div>
-    </div>
+    </div> <!-- Конец appContainer -->
 
     <!-- Модальное окно Редактирования/Создания -->
     <div class="modal-overlay" id="formModal">
@@ -323,14 +325,6 @@
                     </div>
                 </div>
                 
-                <div class="inset-list-group" style="margin-top: 24px;">
-                    <div class="inset-list">
-                        <div class="inset-list-item center-action" id="btnForceUpdate">
-                            Обновить приложение
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
@@ -420,7 +414,6 @@
         }
 
         async function initApp() {
-            // Загрузка категорий
             const localCats = safeStorage.get(STORE_KEYS.cats);
             if (localCats) {
                 CATEGORIES = JSON.parse(localCats);
@@ -429,7 +422,6 @@
                 saveCategories();
             }
 
-            // Загрузка товаров
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
@@ -465,15 +457,25 @@
                 if (sortPref === 'alpha') {
                     return a.name.localeCompare(b.name, 'ru');
                 } else {
-                    return a.id - b.id; // Чем меньше ID (timestamp), тем старше товар
+                    return a.id - b.id; 
                 }
             });
         }
 
+        // ОБНОВЛЕННЫЙ УМНЫЙ ПОИСК: Ищет строго по началу слова
         function isMatchSearch(text, queryStr) {
             if (!text || !queryStr) return false;
+            
             const textWords = text.toLowerCase().split(/[\s\-.,()]+/);
             const queryWords = queryStr.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            
+            // Если запрос состоит из одного слова — проверяем, начинается ли хоть одно слово из текста с этого запроса
+            if (queryWords.length === 1) {
+                const q = queryWords[0];
+                return textWords.some(tw => tw.startsWith(q));
+            }
+
+            // Если слов в запросе несколько — все они должны совпадать с началом каких-то слов в тексте
             return queryWords.every(qw => textWords.some(tw => tw.startsWith(qw)));
         }
 
@@ -496,6 +498,13 @@
         document.getElementById('searchInput').addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase().trim();
             renderShelves(document.getElementById('contentContainer'));
+        });
+
+        // Сворачивание клавиатуры при клике вне поля поиска
+        document.getElementById('appContainer').addEventListener('click', (e) => {
+            if (e.target.id !== 'searchInput' && document.activeElement === document.getElementById('searchInput')) {
+                document.getElementById('searchInput').blur();
+            }
         });
 
         function renderShelves(container) {
@@ -615,14 +624,59 @@
         function renderSettingsCats() {
             const list = document.getElementById('catSettingsList');
             list.innerHTML = '';
-            CATEGORIES.forEach(cat => {
+            CATEGORIES.forEach((cat, index) => {
                 list.innerHTML += `
-                <div class="cat-item-setting">
-                    <span>${cat}</span>
-                    <button class="cat-item-setting-del" onclick="deleteCategory('${cat}')">×</button>
+                <div class="cat-item-setting" id="cat-row-${index}">
+                    <div class="cat-item-setting-content">
+                        <span class="cat-item-setting-name" id="cat-name-${index}">${cat}</span>
+                        <input type="text" class="cat-item-setting-input" id="cat-input-${index}" value="${cat}">
+                    </div>
+                    <div class="cat-item-actions">
+                        <button class="cat-item-btn edit" id="btn-edit-${index}" onclick="startEditCategory(${index}, '${cat}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button class="cat-item-btn save" id="btn-save-${index}" onclick="saveEditCategory(${index}, '${cat}')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </button>
+                        <button class="cat-item-btn del" onclick="deleteCategory('${cat}')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
                 </div>`;
             });
         }
+
+        window.startEditCategory = (index, oldName) => {
+            document.getElementById(`cat-name-${index}`).style.display = 'none';
+            const input = document.getElementById(`cat-input-${index}`);
+            input.style.display = 'block';
+            input.focus();
+            document.getElementById(`btn-edit-${index}`).style.display = 'none';
+            document.getElementById(`btn-save-${index}`).style.display = 'flex';
+        };
+
+        window.saveEditCategory = (index, oldName) => {
+            const input = document.getElementById(`cat-input-${index}`);
+            const newName = input.value.trim();
+            if (!newName) return showToast("Название не может быть пустым");
+            if (newName !== oldName && CATEGORIES.includes(newName)) return showToast("Такая категория уже есть");
+            
+            if (newName !== oldName) {
+                // Обновляем название в массиве категорий
+                const catIndex = CATEGORIES.indexOf(oldName);
+                if (catIndex > -1) CATEGORIES[catIndex] = newName;
+                
+                // Обновляем название во всех товарах, где была эта категория
+                items.forEach(item => {
+                    if (item.cat === oldName) item.cat = newName;
+                });
+                
+                saveApp();
+                saveCategories();
+            } else {
+                renderSettingsCats(); // просто возвращаем обратно вид, если ничего не изменилось
+            }
+        };
 
         document.getElementById('btnAddCat').onclick = () => {
             const val = document.getElementById('inpNewCat').value.trim();
@@ -694,15 +748,6 @@
             saveApp(); render(); closeModal(document.getElementById('formModal'));
         };
 
-        // ФИКС ДЛЯ КЛАВИАТУРЫ: Скроллим к полю, чтобы его было видно + отключаем дергающуюся анимацию окна
-        document.querySelectorAll('#formModal input, #formModal select').forEach(input => {
-            input.addEventListener('focus', function() {
-                setTimeout(() => {
-                    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 300);
-            });
-        });
-
         function openModal(el) { 
             el.style.display = 'flex'; 
             requestAnimationFrame(() => {
@@ -710,7 +755,6 @@
                 let card = el.querySelector('.modal-card');
                 if (card) {
                     card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-                    // Отключаем анимацию после появления, чтобы при ресайзе от клавиатуры окно не прыгало
                     setTimeout(() => { if (el.classList.contains('active-modal')) card.style.transition = 'none'; }, 350);
                 }
             }); 
@@ -719,6 +763,13 @@
         function closeModal(el) { 
             let card = el.querySelector('.modal-card');
             if (card) card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+            
+            // Если закрываем модалку настроек - убираем фокус с инпута редактирования категорий
+            if(el.id === 'settingsModal') {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.tagName === 'INPUT') activeElement.blur();
+            }
+            
             el.classList.remove('active-modal'); 
             setTimeout(() => el.style.display = 'none', 300); 
         }
@@ -770,11 +821,6 @@
         document.getElementById('btnCloseSettings').onclick = () => closeModal(document.getElementById('settingsModal'));
         document.getElementById('btnCancelForm').onclick = () => closeModal(document.getElementById('formModal'));
         document.getElementById('btnAddItem').onclick = () => openForm(null);
-
-        document.getElementById('btnForceUpdate').onclick = () => {
-            showToast('Обновление...');
-            setTimeout(() => { window.location.replace(window.location.pathname + "?v=" + Date.now()); }, 300);
-        };
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
