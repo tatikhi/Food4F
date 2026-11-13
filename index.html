@@ -10,8 +10,6 @@
             try {
                 var savedTheme = localStorage.getItem('cb_theme') || 'sunlit';
                 document.documentElement.setAttribute('data-theme', savedTheme);
-                var savedFontSize = localStorage.getItem('cb_font_size') || 'normal';
-                document.documentElement.setAttribute('data-font-size', savedFontSize);
             } catch(e) {}
         })();
     </script>
@@ -24,44 +22,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Alice&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        html { font-size: 16px; }
-        html[data-font-size="large"] { font-size: 18px; }
-
         :root, [data-theme="sunlit"] {
             --bg-main: #FFF5F0; --surface: #FFFFFF; --text-primary: #331B14; --text-secondary: #704C42;
             --accent-main: #E87A5D; --accent-light: #FDE6DD; --border-color: #F7CBBF;
-            --shadow-soft: 0 2px 8px rgba(232, 122, 93, 0.08); --icon-inactive: #C7A69C;
-            --ios-blue: #007AFF;
+            --shadow-soft: 0 2px 8px rgba(232, 122, 93, 0.08); --icon-inactive: #C7A69C; --ios-blue: #007AFF;
         }
         [data-theme="berry"] {
             --bg-main: #1D161E; --surface: #2A202C; --text-primary: #F7EBF0; --text-secondary: #B39DA8;
             --accent-main: #D96B94; --accent-light: #3D2938; --border-color: #4A3545;
-            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2); --icon-inactive: #6B5263;
-            --ios-blue: #0A84FF;
+            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2); --icon-inactive: #6B5263; --ios-blue: #0A84FF;
         }
         [data-theme="icederm"] {
             --bg-main: #F0F6FA; --surface: #FFFFFF; --text-primary: #122836; --text-secondary: #425F73;
             --accent-main: #2B78A3; --accent-light: #DCECF5; --border-color: #B9D5E6;
-            --shadow-soft: 0 2px 8px rgba(43, 120, 163, 0.08); --icon-inactive: #90AEC2;
-            --ios-blue: #007AFF;
+            --shadow-soft: 0 2px 8px rgba(43, 120, 163, 0.08); --icon-inactive: #90AEC2; --ios-blue: #007AFF;
         }
         [data-theme="espresso"] {
             --bg-main: #F8F4EE; --surface: #FFFFFF; --text-primary: #2B211A; --text-secondary: #5C4C40;
             --accent-main: #6F4E37; --accent-light: #ECE1D7; --border-color: #D9C8B8;
-            --shadow-soft: 0 2px 8px rgba(111, 78, 55, 0.08); --icon-inactive: #AFA093;
-            --ios-blue: #007AFF;
+            --shadow-soft: 0 2px 8px rgba(111, 78, 55, 0.08); --icon-inactive: #AFA093; --ios-blue: #007AFF;
         }
         [data-theme="cyberglow"] {
             --bg-main: #F5F0FE; --surface: #FFFFFF; --text-primary: #1F1135; --text-secondary: #523D70;
             --accent-main: #8A5CF5; --accent-light: #EBE1FF; --border-color: #D3C2F8;
-            --shadow-soft: 0 2px 8px rgba(138, 92, 245, 0.08); --icon-inactive: #A692CD;
-            --ios-blue: #0A84FF;
+            --shadow-soft: 0 2px 8px rgba(138, 92, 245, 0.08); --icon-inactive: #A692CD; --ios-blue: #0A84FF;
         }
         [data-theme="midnight"] {
             --bg-main: #0F141C; --surface: #161D2B; --text-primary: #F0F5FF; --text-secondary: #8E9EB8;
             --accent-main: #4E9EFF; --accent-light: #1A2E4A; --border-color: #23324A;
-            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3); --icon-inactive: #4B5E7D;
-            --ios-blue: #0A84FF;
+            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3); --icon-inactive: #4B5E7D; --ios-blue: #0A84FF;
         }
 
         * {
@@ -73,7 +62,7 @@
         body {
             background-color: var(--bg-main); color: var(--text-primary);
             min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            padding: 20px 14px 40px;
+            padding: 20px 14px 40px; font-size: 16px;
         }
 
         body.theme-animated * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
@@ -92,7 +81,7 @@
 
         .brand-font, .modal-title { font-family: 'Alice', Georgia, serif; font-weight: 400; }
         
-        .header-bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .header-bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .logo { font-family: 'Alice', Georgia, serif; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
         .btn-settings-round {
@@ -113,8 +102,11 @@
         
         .routine-item { background: var(--surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; cursor: pointer; transition: 0.2s; }
         .routine-item:active { background: var(--bg-main); }
+        .routine-item-vertical { flex-direction: column; align-items: stretch; cursor: default; }
+        .routine-item-vertical:active { background: var(--surface); }
         
         .item-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; }
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
@@ -127,18 +119,32 @@
         .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
         .dot-red { background-color: rgb(205, 52, 52); color: rgb(205, 52, 52); }
 
-        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК (Чистая) */
+        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК */
         .btn-check-done { background: rgb(47, 139, 88); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .btn-check-done:active { opacity: 0.8; }
         .btn-check-done svg { width: 16px; height: 16px; stroke: #FFFFFF; stroke-width: 2.5; fill: none; }
 
-        /* МАГАЗИНЫ */
-        .store-links { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-        .store-btn { background: var(--bg-main); color: var(--accent-main); font-size: 0.8125rem; padding: 6px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid var(--border-color); }
+        /* МАГАЗИНЫ И ССЫЛКИ */
+        .store-links { margin-top: 12px; }
+        .store-btn-primary { 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: var(--ios-blue); color: #FFF; width: 100%; padding: 10px; 
+            border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem;
+            margin-bottom: 8px; transition: 0.2s;
+        }
+        .store-btn-primary:active { opacity: 0.8; }
+        .store-btn-primary svg { width: 18px; height: 18px; }
+        
+        .secondary-stores { display: flex; gap: 6px; flex-wrap: wrap; }
+        .store-btn-secondary { 
+            background: var(--bg-main); color: var(--text-secondary); font-size: 0.8rem; 
+            padding: 6px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; 
+            border: 1px solid var(--border-color);
+        }
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 12px; }
 
-        /* ИНТЕРФЕЙС НАСТРОЕК КАК В IOS */
+        /* ИНТЕРФЕЙС НАСТРОЕК */
         .inset-list-group { margin-bottom: 20px; width: 100%; }
         .inset-list { background: var(--surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; }
         .inset-list-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 1rem; color: var(--text-primary); cursor: pointer; transition: background 0.2s ease; }
@@ -221,6 +227,17 @@
                     <select id="inpCat"></select>
                 </div>
                 <div class="form-group">
+                    <label>Основной магазин</label>
+                    <select id="inpStore">
+                        <option value="none">Не выбран</option>
+                        <option value="ozon">Ozon Fresh</option>
+                        <option value="market">Яндекс Маркет</option>
+                        <option value="lavka">Яндекс Лавка</option>
+                        <option value="vkusvill">ВкусВилл</option>
+                        <option value="samokat">Самокат</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Заметка / Бренд</label>
                     <input type="text" id="inpNote" placeholder="">
                 </div>
@@ -269,29 +286,30 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const CATEGORIES = [
-            "Овощи, фрукты, зелень и ягоды", "Замороженные продукты и полуфабрикаты", 
-            "Мясо, птица, рыба и полуфабрикаты", "Молочные продукты и яйца", "Сыры", 
-            "Бакалея, крупы, макаронные изделия", "Соусы, приправы и заправки", 
-            "Кофе, сладости и десерты", "Бытовые товары, гигиена и аптека", "Другое"
-        ];
+        const CATEGORIES = ["Холодильник", "Кухня", "NonFood"];
+
+        // Настройки магазинов
+        const STORES = {
+            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?text=' },
+            'market': { label: 'Я.Маркет', url: 'https://market.yandex.ru/search?text=' },
+            'lavka': { label: 'Я.Лавка', url: 'https://lavka.yandex.ru/search?text=' },
+            'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
+            'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
+        };
 
         const initialProducts = [
-            {n: "Томаты", c: 0}, {n: "Огурцы", c: 0}, {n: "Яблоки", c: 0}, {n: "Бананы", c: 0},
-            {n: "Брокколи", c: 1}, {n: "Тыква (нарезанная)", c: 1}, {n: "Морковь (кубиками)", c: 1}, {n: "Черника / Смородина чёрная", c: 1}, {n: "Картофель фри", c: 1}, {n: "Вареники", note: "с картофелем и грибами", c: 1}, {n: "Сырники", note: "из рикотты", c: 1}, {n: "Лепёшки роти", note: "слоёные / с зелёным луком", c: 1}, {n: "Тесто слоёное бездрожжевое", c: 1}, {n: "Тесто слоёное дрожжевое", c: 1}, {n: "Булочки", note: "для бургеров / с кунжутом", c: 1},
-            {n: "Фарш из куриной грудки", c: 2}, {n: "Голень куриная", c: 2}, {n: "Фрикадельки", note: "куриные / из индейки", c: 2}, {n: "Сосиски", note: "куриные", c: 2}, {n: "Рыбные палочки", note: "из филе минтая", c: 2}, {n: "Тунец", note: "консервированный в собственном соку", c: 2},
-            {n: "Яйца куриные (С1)", c: 3}, {n: "Молоко 2,5%", c: 3}, {n: "Кефир 3,2%", c: 3}, {n: "Ряженка 3,2%", c: 3}, {n: "Сметана 15%", c: 3}, {n: "Творожок со сливками 5%", c: 3}, {n: "Творог 9%", c: 3}, {n: "Масло сливочное 82,5%", c: 3}, {n: "Сырок глазированный", c: 3},
-            {n: "Сыр творожный сливочный 65%", c: 4}, {n: "Сыр полутвёрдый тёртый 45%", c: 4},
-            {n: "Макаронные изделия", note: "вермишель, фигурные", c: 5}, {n: "Мука", c: 5}, {n: "Листы для лазаньи", c: 5}, {n: "Рис", c: 5}, {n: "Крупа гречневая", c: 5}, {n: "Чечевица красная", c: 5}, {n: "Овсяные хлопья", c: 5}, {n: "Сахар тростниковый", c: 5},
-            {n: "Соус для макарон / томатный", c: 6}, {n: "Бургер-соус", c: 6}, {n: "Соус десертный (шоколадный)", c: 6}, {n: "Зажарка для супа", note: "с морковью и луком", c: 6}, {n: "Смеси приправ для плова", c: 6}, {n: "Бумага для жарки филе", c: 6},
-            {n: "Кофе в дрип-пакетах", c: 7}, {n: "Сгущённое молоко", note: "с бананом", c: 7}, {n: "Мороженое", note: "пломбир в вафельном стаканчике", c: 7}, {n: "Желе порционное (низкокалорийное)", c: 7}, {n: "Желатин пищевой", c: 7}, {n: "Ванильный сахар", c: 7},
-            {n: "Бумажные полотенца", c: 8}, {n: "Губки для посуды", c: 8}, {n: "Пергамент / бумага для выпечки", c: 8}, {n: "Сменные кассеты / фильтры для воды", c: 8}, {n: "Стиральный порошок", c: 8}, {n: "Глазные капли Стиллавит", c: 8}
-        ].map((p, i) => ({ id: i+1, name: p.n, cat: CATEGORIES[p.c], note: p.note || '', status: 'ok' }));
+            {n: "Молоко 2,5%", c: "Холодильник"}, {n: "Кефир 3,2%", c: "Холодильник"}, {n: "Яйца куриные (С1)", c: "Холодильник"},
+            {n: "Сыр творожный", c: "Холодильник"}, {n: "Огурцы", c: "Холодильник"}, {n: "Томаты", c: "Холодильник"},
+            {n: "Фарш куриный", c: "Холодильник"}, {n: "Сырники", c: "Холодильник"}, {n: "Брокколи (заморозка)", c: "Холодильник"},
+            {n: "Рис", c: "Кухня"}, {n: "Макаронные изделия", c: "Кухня"}, {n: "Гречка", c: "Кухня"},
+            {n: "Овсяные хлопья", c: "Кухня"}, {n: "Сахар тростниковый", c: "Кухня"}, {n: "Кофе в дрип-пакетах", c: "Кухня"},
+            {n: "Бумажные полотенца", c: "NonFood"}, {n: "Стиральный порошок", c: "NonFood"}, {n: "Губки для посуды", c: "NonFood"}
+        ].map((p, i) => ({ id: i+1, name: p.n, cat: p.c, note: '', status: 'ok', store: 'none' }));
 
         let items = [];
         let currentTab = 'shelves';
 
-        const STORE_KEYS = { items: 'stock_items_v2' };
+        const STORE_KEYS = { items: 'stock_items_v3' };
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -327,7 +345,7 @@
         function saveApp() {
             safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
             if (tg.CloudStorage) {
-                saveToCloudChunked('cloud_items_v2', items);
+                saveToCloudChunked('cloud_items_v3', items);
             }
         }
 
@@ -339,7 +357,7 @@
             render();
 
             if (tg.CloudStorage) {
-                const cloudItems = await loadFromCloudChunked('cloud_items_v2');
+                const cloudItems = await loadFromCloudChunked('cloud_items_v3');
                 if (cloudItems && cloudItems.length > 0) {
                     items = cloudItems;
                     render();
@@ -361,7 +379,10 @@
         }
 
         function renderShelves(container) {
-            CATEGORIES.forEach(cat => {
+            // Собираем все уникальные категории, включая старые (чтобы не потерять товары при переходе)
+            const allCats = Array.from(new Set([...CATEGORIES, ...items.map(i => i.cat)]));
+            
+            allCats.forEach(cat => {
                 const catItems = items.filter(i => i.cat === cat);
                 if (catItems.length === 0) return;
                 
@@ -394,24 +415,47 @@
                 const list = items.filter(i => i.status === urg.id);
                 if (list.length === 0) return;
                 
-                let html = `<div class="category-title"><svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 2px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg> ${urg.label}</div>`;
+                const svgAlert = `<svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 4px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg>`;
+                let html = `<div class="category-title">${svgAlert} ${urg.label}</div>`;
+                
                 list.forEach(item => {
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
+                    
+                    let linksHtml = '';
+                    if (item.store && STORES[item.store]) {
+                        // Главная кнопка магазина
+                        const st = STORES[item.store];
+                        linksHtml += `<a href="${st.url}${query}" class="store-btn-primary" target="_blank"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> ${st.label}</a>`;
+                        
+                        // Остальные серые кнопки
+                        linksHtml += `<div class="secondary-stores">`;
+                        for (let key in STORES) {
+                            if (key !== item.store) {
+                                linksHtml += `<a href="${STORES[key].url}${query}" class="store-btn-secondary" target="_blank">${STORES[key].label}</a>`;
+                            }
+                        }
+                        linksHtml += `</div>`;
+                    } else {
+                        // Если нет главного магазина, выводим все как вторичные
+                        linksHtml += `<div class="secondary-stores">`;
+                        for (let key in STORES) {
+                            linksHtml += `<a href="${STORES[key].url}${query}" class="store-btn-secondary" target="_blank">${STORES[key].label}</a>`;
+                        }
+                        linksHtml += `</div>`;
+                    }
+
                     html += `
-                    <div class="routine-item" style="cursor:default">
-                        <div class="item-info">
-                            <div class="item-name">${item.name}</div>
-                            ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
-                            <div class="store-links">
-                                <a href="https://www.ozon.ru/search/?text=${query}" class="store-btn" target="_blank">Ozon</a>
-                                <a href="https://market.yandex.ru/search?text=${query}" class="store-btn" target="_blank">Маркет</a>
-                                <a href="https://vkusvill.ru/search/?text=${query}" class="store-btn" target="_blank">ВкусВилл</a>
-                                <a href="https://samokat.ru/search?q=${query}" class="store-btn" target="_blank">Самокат</a>
+                    <div class="routine-item routine-item-vertical">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <div class="item-name">${item.name}</div>
+                                ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
                             </div>
+                            <button class="btn-check-done" onclick="setStatus(${item.id}, 'ok')">
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
                         </div>
-                        <button class="btn-check-done" onclick="setStatus(${item.id}, 'ok')">
-                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </button>
+                        <div class="store-links">${linksHtml}</div>
                     </div>`;
                 });
                 container.innerHTML += html;
@@ -433,6 +477,7 @@
 
         function populateCatSelect() {
             const sel = document.getElementById('inpCat');
+            sel.innerHTML = '';
             CATEGORIES.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
@@ -443,7 +488,16 @@
                 document.getElementById('formTitle').innerText = "Редактировать";
                 document.getElementById('editId').value = item.id;
                 document.getElementById('inpName').value = item.name;
+                
+                // Если у товара старая категория (не из списка 3-х новых), добавляем ее временно в селект
+                const sel = document.getElementById('inpCat');
+                if (!CATEGORIES.includes(item.cat)) {
+                    let exists = Array.from(sel.options).some(opt => opt.value === item.cat);
+                    if (!exists) sel.innerHTML += `<option value="${item.cat}">${item.cat}</option>`;
+                }
+                
                 document.getElementById('inpCat').value = item.cat;
+                document.getElementById('inpStore').value = item.store || 'none';
                 document.getElementById('inpNote').value = item.note || '';
                 document.getElementById('btnDeleteForm').style.display = 'block';
             } else {
@@ -451,6 +505,8 @@
                 document.getElementById('editId').value = '';
                 document.getElementById('inpName').value = '';
                 document.getElementById('inpNote').value = '';
+                document.getElementById('inpStore').value = 'none';
+                document.getElementById('inpCat').value = CATEGORIES[0];
                 document.getElementById('btnDeleteForm').style.display = 'none';
             }
             openModal(modal);
@@ -461,14 +517,15 @@
             const name = document.getElementById('inpName').value.trim();
             const cat = document.getElementById('inpCat').value;
             const note = document.getElementById('inpNote').value.trim();
+            const store = document.getElementById('inpStore').value;
 
             if (!name) return showToast("Введите название");
 
             if (id) {
                 const item = items.find(i => i.id == id);
-                item.name = name; item.cat = cat; item.note = note;
+                item.name = name; item.cat = cat; item.note = note; item.store = store;
             } else {
-                items.push({ id: Date.now(), name, cat, note, status: 'ok' });
+                items.push({ id: Date.now(), name, cat, note, store, status: 'ok' });
             }
             saveApp(); render(); closeModal(document.getElementById('formModal'));
         };
