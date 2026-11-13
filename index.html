@@ -110,14 +110,14 @@
         .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; }
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
-        /* ТОЧКИ СТАТУСА НА ПОЛКЕ (Красный слева, Зеленый справа) */
+        /* ТОЧКИ СТАТУСА НА ПОЛКЕ (Красный слева, Желтый по центру, Зеленый справа) */
         .status-controls { display: flex; gap: 8px; align-items: center; }
         .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; color: transparent; }
         .dot-btn.active { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
         
-        .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
-        .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
         .dot-red { background-color: rgb(205, 52, 52); color: rgb(205, 52, 52); }
+        .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
+        .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
 
         /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК */
         .btn-check-done { background: rgb(47, 139, 88); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
@@ -232,7 +232,7 @@
                         <option value="none">Не выбран</option>
                         <option value="ozon">Ozon Fresh</option>
                         <option value="market">Яндекс Маркет</option>
-                        <option value="lavka">Яндекс Лавка</option>
+                        <option value="lavka">Я.Лавка (через Маркет)</option>
                         <option value="vkusvill">ВкусВилл</option>
                         <option value="samokat">Самокат</option>
                     </select>
@@ -288,28 +288,33 @@
 
         const CATEGORIES = ["Холодильник", "Кухня", "NonFood"];
 
-        // Настройки магазинов
+        // Настройки магазинов (Лавка через маркет с параметром &text=)
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?text=' },
             'market': { label: 'Я.Маркет', url: 'https://market.yandex.ru/search?text=' },
-            'lavka': { label: 'Я.Лавка', url: 'https://lavka.yandex.ru/search?text=' },
+            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' },
             'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
             'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
         };
 
+        // ПОЛНЫЙ СПИСОК (58 позиций), всё в категории Холодильник
         const initialProducts = [
-            {n: "Молоко 2,5%", c: "Холодильник"}, {n: "Кефир 3,2%", c: "Холодильник"}, {n: "Яйца куриные (С1)", c: "Холодильник"},
-            {n: "Сыр творожный", c: "Холодильник"}, {n: "Огурцы", c: "Холодильник"}, {n: "Томаты", c: "Холодильник"},
-            {n: "Фарш куриный", c: "Холодильник"}, {n: "Сырники", c: "Холодильник"}, {n: "Брокколи (заморозка)", c: "Холодильник"},
-            {n: "Рис", c: "Кухня"}, {n: "Макаронные изделия", c: "Кухня"}, {n: "Гречка", c: "Кухня"},
-            {n: "Овсяные хлопья", c: "Кухня"}, {n: "Сахар тростниковый", c: "Кухня"}, {n: "Кофе в дрип-пакетах", c: "Кухня"},
-            {n: "Бумажные полотенца", c: "NonFood"}, {n: "Стиральный порошок", c: "NonFood"}, {n: "Губки для посуды", c: "NonFood"}
-        ].map((p, i) => ({ id: i+1, name: p.n, cat: p.c, note: '', status: 'ok', store: 'none' }));
+            {n: "Томаты"}, {n: "Огурцы"}, {n: "Яблоки"}, {n: "Бананы"},
+            {n: "Брокколи"}, {n: "Тыква", note: "нарезанная"}, {n: "Морковь", note: "кубиками"}, {n: "Черника / Смородина чёрная"}, {n: "Картофель фри"}, {n: "Вареники", note: "с картофелем и грибами"}, {n: "Сырники", note: "из рикотты"}, {n: "Лепёшки роти", note: "слоёные / с зелёным луком"}, {n: "Тесто слоёное бездрожжевое"}, {n: "Тесто слоёное дрожжевое"}, {n: "Булочки", note: "для бургеров / с кунжутом"},
+            {n: "Фарш из куриной грудки"}, {n: "Голень куриная"}, {n: "Фрикадельки", note: "куриные / из индейки"}, {n: "Сосиски", note: "куриные"}, {n: "Рыбные палочки", note: "из филе минтая"}, {n: "Тунец", note: "консервированный в собственном соку"},
+            {n: "Яйца куриные (С1)"}, {n: "Молоко 2,5%"}, {n: "Кефир 3,2%"}, {n: "Ряженка 3,2%"}, {n: "Сметана 15%"}, {n: "Творожок со сливками 5%"}, {n: "Творог 9%"}, {n: "Масло сливочное 82,5%"}, {n: "Сырок глазированный"},
+            {n: "Сыр творожный сливочный 65%"}, {n: "Сыр полутвёрдый тёртый 45%"},
+            {n: "Макаронные изделия", note: "из твёрдых сортов: вермишель, фигурные"}, {n: "Мука"}, {n: "Листы для лазаньи"}, {n: "Рис"}, {n: "Крупа гречневая"}, {n: "Чечевица красная"}, {n: "Овсяные хлопья"}, {n: "Сахар тростниковый"},
+            {n: "Соус для макарон / томатный"}, {n: "Бургер-соус"}, {n: "Соус десертный (шоколадный)"}, {n: "Зажарка для супа", note: "с морковью и луком"}, {n: "Смеси приправ для плова"}, {n: "Бумага для жарки филе"},
+            {n: "Кофе в дрип-пакетах"}, {n: "Сгущённое молоко", note: "с бананом"}, {n: "Мороженое", note: "пломбир в вафельном стаканчике"}, {n: "Желе порционное (низкокалорийное)"}, {n: "Желатин пищевой"}, {n: "Ванильный сахар"},
+            {n: "Бумажные полотенца"}, {n: "Губки для посуды"}, {n: "Пергамент / бумага для выпечки"}, {n: "Сменные кассеты / фильтры для воды"}, {n: "Стиральный порошок"}, {n: "Глазные капли Стиллавит"}
+        ].map((p, i) => ({ id: i+1, name: p.n, cat: "Холодильник", note: p.note || '', status: 'ok', store: 'none' }));
 
         let items = [];
         let currentTab = 'shelves';
 
-        const STORE_KEYS = { items: 'stock_items_v3' };
+        // Инкремент версии хранилища (v4) гарантирует, что 58 товаров точно появятся у вас при первом запуске
+        const STORE_KEYS = { items: 'stock_items_v4' };
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -345,7 +350,7 @@
         function saveApp() {
             safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
             if (tg.CloudStorage) {
-                saveToCloudChunked('cloud_items_v3', items);
+                saveToCloudChunked('cloud_items_v4', items);
             }
         }
 
@@ -357,7 +362,7 @@
             render();
 
             if (tg.CloudStorage) {
-                const cloudItems = await loadFromCloudChunked('cloud_items_v3');
+                const cloudItems = await loadFromCloudChunked('cloud_items_v4');
                 if (cloudItems && cloudItems.length > 0) {
                     items = cloudItems;
                     render();
@@ -379,7 +384,6 @@
         }
 
         function renderShelves(container) {
-            // Собираем все уникальные категории, включая старые (чтобы не потерять товары при переходе)
             const allCats = Array.from(new Set([...CATEGORIES, ...items.map(i => i.cat)]));
             
             allCats.forEach(cat => {
@@ -423,11 +427,9 @@
                     
                     let linksHtml = '';
                     if (item.store && STORES[item.store]) {
-                        // Главная кнопка магазина
                         const st = STORES[item.store];
                         linksHtml += `<a href="${st.url}${query}" class="store-btn-primary" target="_blank"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> ${st.label}</a>`;
                         
-                        // Остальные серые кнопки
                         linksHtml += `<div class="secondary-stores">`;
                         for (let key in STORES) {
                             if (key !== item.store) {
@@ -436,7 +438,6 @@
                         }
                         linksHtml += `</div>`;
                     } else {
-                        // Если нет главного магазина, выводим все как вторичные
                         linksHtml += `<div class="secondary-stores">`;
                         for (let key in STORES) {
                             linksHtml += `<a href="${STORES[key].url}${query}" class="store-btn-secondary" target="_blank">${STORES[key].label}</a>`;
@@ -489,7 +490,6 @@
                 document.getElementById('editId').value = item.id;
                 document.getElementById('inpName').value = item.name;
                 
-                // Если у товара старая категория (не из списка 3-х новых), добавляем ее временно в селект
                 const sel = document.getElementById('inpCat');
                 if (!CATEGORIES.includes(item.cat)) {
                     let exists = Array.from(sel.options).some(opt => opt.value === item.cat);
