@@ -108,9 +108,23 @@
 
         .sort-select { width: auto !important; min-width: 110px; border-radius: 10px !important; background-color: var(--bg-main) !important; font-weight: 600; font-size: 0.9rem !important; }
 
-        /* СПИСКИ ТОВАРОВ */
-        .category-title { font-family: 'Alice', serif; font-size: 1.15rem; color: var(--text-primary); margin: 16px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-        
+        /* КАТЕГОРИИ И ГАРМОШКА */
+        .category-container { margin-bottom: 8px; }
+        .category-title { 
+            font-family: 'Alice', serif; font-size: 1.15rem; color: var(--text-primary); 
+            margin: 16px 0 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; 
+            display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; 
+        }
+        .category-title:active { opacity: 0.7; }
+        .category-title-left { display: flex; align-items: center; gap: 8px; }
+        .category-arrow { 
+            width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; 
+            stroke-linecap: round; stroke-linejoin: round; transition: transform 0.25s ease; 
+        }
+        .category-container.collapsed .category-arrow { transform: rotate(-90deg); }
+        .category-container.collapsed .category-content { display: none; }
+
+        /* ЭЛЕМЕНТЫ ТОВАРОВ */
         .routine-item { background: var(--surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; cursor: pointer; transition: 0.2s; }
         .routine-item:active { background: var(--bg-main); }
         .routine-item-vertical { flex-direction: column; align-items: stretch; cursor: default; }
@@ -144,7 +158,7 @@
         .store-btn-primary { 
             display: flex; align-items: center; justify-content: center; gap: 8px;
             background: var(--ios-blue); color: #FFF; width: 100%; padding: 10px; 
-            border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; transition: 0.2s;
+            border-radius: 10px; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; transition: 0.2s; cursor: pointer; border: none;
         }
         .store-btn-primary:active { opacity: 0.8; }
         .store-btn-primary svg { width: 18px; height: 18px; }
@@ -152,10 +166,17 @@
         .secondary-stores { display: flex; gap: 6px; flex-wrap: wrap; }
         .store-btn-secondary { 
             background: var(--bg-main); color: var(--text-secondary); font-size: 0.8rem; 
-            padding: 6px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid var(--border-color);
+            padding: 6px 10px; border-radius: 8px; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer;
         }
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
+
+        /* СИНХРОНИЗАЦИЯ */
+        .btn-sync {
+            flex: 1; padding: 12px 10px; border-radius: 10px; border: none; font-weight: 600; font-size: 0.9rem;
+            background: var(--accent-light); color: var(--accent-main); cursor: pointer; transition: 0.2s;
+        }
+        .btn-sync:active { opacity: 0.7; }
 
         /* НАСТРОЙКИ КАТЕГОРИЙ */
         .cat-settings-list { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
@@ -171,10 +192,10 @@
         .cat-item-btn.save { color: rgb(47, 139, 88); display: none; }
         .cat-item-btn.del { color: var(--red, #CD3434); }
 
-        /* МОДАЛЬНЫЕ ОКНА: Переписано для идеальной работы с клавиатурой */
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { 
             position: fixed; top: 0; left: 0; right: 0;
-            height: var(--tg-viewport-height); /* Четкая привязка к вьюпорту Telegram */
+            height: var(--tg-viewport-height); 
             background: rgba(0, 0, 0, 0.45); 
             display: none; justify-content: center; align-items: flex-end; 
             z-index: 1000; opacity: 0; transition: opacity 0.3s ease; 
@@ -294,8 +315,7 @@
                     <select id="inpStore">
                         <option value="none">Не выбран</option>
                         <option value="ozon">Ozon Fresh</option>
-                        <option value="market">Яндекс Маркет</option>
-                        <option value="lavka">Я.Лавка (через Маркет)</option>
+                        <option value="lavka">Яндекс Лавка</option>
                         <option value="vkusvill">ВкусВилл</option>
                         <option value="samokat">Самокат</option>
                     </select>
@@ -319,6 +339,15 @@
                 <button class="modal-nav-btn" id="btnCloseSettings">Готово</button>
             </div>
             <div class="modal-body-scrollable">
+
+                <div class="form-group" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                    <label>Синхронизация с семьей</label>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.3;">Чтобы поделиться списком, скопируйте код и отправьте его мужу. При вводе кода список полностью заменяется на присланный.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-sync" onclick="exportSyncCode()">Скопировать мой код</button>
+                        <button type="button" class="btn-sync" onclick="importSyncCode()">Ввести код мужа</button>
+                    </div>
+                </div>
                 
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label>Категории</label>
@@ -354,12 +383,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Отключаем системный свайп закрытия приложения, чтобы наши шторки работали нормально
-        if (tg.disableVerticalSwipes) {
-            tg.disableVerticalSwipes();
-        }
+        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
-        // Жестко привязываем высоту к вьюпорту Telegram (уменьшается при открытии клавиатуры)
         function updateViewportHeight() {
             document.documentElement.style.setProperty('--tg-viewport-height', tg.viewportHeight + 'px');
         }
@@ -367,11 +392,11 @@
         updateViewportHeight();
 
         let CATEGORIES = [];
-        
+        let collapsedCategories = JSON.parse(localStorage.getItem('cb_collapsed') || '{}');
+
         const STORES = {
-            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?text=' },
-            'market': { label: 'Я.Маркет', url: 'https://market.yandex.ru/search?text=' },
-            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' },
+            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
+            'lavka': { label: 'Я.Лавка', url: 'https://lavka.yandex.ru/search?text=' },
             'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
             'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
         };
@@ -451,6 +476,9 @@
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
+            // Миграция со старого "маркета" на лавку
+            items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; });
+            
             document.getElementById('quickSort').value = sortPref;
             document.getElementById('quickSort').onchange = (e) => {
                 sortPref = e.target.value;
@@ -479,6 +507,76 @@
             }
         }
 
+        // ОТКРЫТИЕ ССЫЛОК В ПРИЛОЖЕНИЯХ (Deep Links)
+        window.openStoreLink = (url) => {
+            if (tg.openLink) {
+                tg.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        };
+
+        // СИНХРОНИЗАЦИЯ (Экспорт/Импорт)
+        window.exportSyncCode = () => {
+            const data = {
+                c: CATEGORIES,
+                i: items.map(it => ({ id: it.id, n: it.name, c: it.cat, no: it.note, s: it.status, st: it.store }))
+            };
+            const str = JSON.stringify(data);
+            const encoded = btoa(unescape(encodeURIComponent(str)));
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(encoded).then(() => {
+                    showToast("Код скопирован! Отправьте его в чат.");
+                }).catch(() => fallbackCopy(encoded));
+            } else {
+                fallbackCopy(encoded);
+            }
+        };
+
+        function fallbackCopy(text) {
+            const input = document.createElement('textarea');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            try {
+                document.execCommand('copy');
+                showToast("Код скопирован! Отправьте его в чат.");
+            } catch (err) {
+                prompt("Скопируйте этот код вручную:", text);
+            }
+            document.body.removeChild(input);
+        }
+
+        window.importSyncCode = () => {
+            const code = prompt("Вставьте код, который вам прислали:\n\nВнимание: это полностью заменит ваш текущий список на новый!");
+            if (!code) return;
+            try {
+                const str = decodeURIComponent(escape(atob(code.trim())));
+                const data = JSON.parse(str);
+                if (data && data.c && data.i) {
+                    CATEGORIES = data.c;
+                    items = data.i.map(it => ({
+                        id: it.id || Date.now(),
+                        name: it.n,
+                        cat: it.c,
+                        note: it.no || '',
+                        status: it.s || 'ok',
+                        store: it.st || 'none'
+                    }));
+                    saveApp();
+                    saveCategories();
+                    render();
+                    closeModal(document.getElementById('settingsModal'));
+                    showToast("Список успешно обновлен!");
+                } else {
+                    showToast("Неверный формат кода. Попробуйте еще раз.");
+                }
+            } catch(e) {
+                showToast("Ошибка чтения кода. Проверьте, полностью ли вы его скопировали.");
+            }
+        };
+
         function sortItemsList(list) {
             return list.sort((a, b) => {
                 if (sortPref === 'alpha') {
@@ -489,7 +587,6 @@
             });
         }
 
-        // ОБНОВЛЕННЫЙ ПОИСК: Ищет только с самого начала первого слова в названии товара
         function isMatchSearch(item, queryStr) {
             if (!queryStr) return true;
             const nameLower = item.name.toLowerCase().trim();
@@ -518,13 +615,18 @@
             renderShelves(document.getElementById('contentContainer'));
         });
 
-        // Сворачивание клавиатуры при тапе вне строки поиска
         document.getElementById('appContainer').addEventListener('click', (e) => {
             const searchInput = document.getElementById('searchInput');
             if (e.target !== searchInput && document.activeElement === searchInput) {
                 searchInput.blur();
             }
         });
+
+        window.toggleCategory = (catName) => {
+            collapsedCategories[catName] = !collapsedCategories[catName];
+            localStorage.setItem('cb_collapsed', JSON.stringify(collapsedCategories));
+            renderShelves(document.getElementById('contentContainer'));
+        };
 
         function renderShelves(container) {
             container.innerHTML = ''; 
@@ -544,8 +646,20 @@
                 if (catItems.length === 0) return;
                 
                 catItems = sortItemsList(catItems);
+                
+                // Если идет поиск, принудительно раскрываем все гармошки, чтобы видеть результаты
+                const isCollapsed = searchQuery ? false : collapsedCategories[cat];
 
-                let html = `<div class="category-title">${cat}</div>`;
+                let html = `
+                <div class="category-container ${isCollapsed ? 'collapsed' : ''}" id="cat-block-${cat}">
+                    <div class="category-title" onclick="toggleCategory('${cat}')">
+                        <div class="category-title-left">
+                            <span>${cat}</span>
+                        </div>
+                        <svg class="category-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="category-content">`;
+
                 catItems.forEach(item => {
                     html += `
                     <div class="routine-item" onclick="openForm(${item.id})">
@@ -560,6 +674,8 @@
                         </div>
                     </div>`;
                 });
+
+                html += `</div></div>`;
                 container.innerHTML += html;
             });
         }
@@ -577,7 +693,7 @@
                 list = sortItemsList(list);
 
                 const svgAlert = `<svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 4px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg>`;
-                let html = `<div class="category-title">${svgAlert} ${urg.label}</div>`;
+                let html = `<div class="category-title" style="cursor: default;"><div class="category-title-left">${svgAlert} ${urg.label}</div></div>`;
                 
                 list.forEach(item => {
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
@@ -585,19 +701,19 @@
                     let linksHtml = '';
                     if (item.store && STORES[item.store]) {
                         const st = STORES[item.store];
-                        linksHtml += `<a href="${st.url}${query}" class="store-btn-primary" target="_blank"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> ${st.label}</a>`;
+                        linksHtml += `<button class="store-btn-primary" onclick="openStoreLink('${st.url}${query}')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> ${st.label}</button>`;
                         
                         linksHtml += `<div class="secondary-stores">`;
                         for (let key in STORES) {
                             if (key !== item.store) {
-                                linksHtml += `<a href="${STORES[key].url}${query}" class="store-btn-secondary" target="_blank">${STORES[key].label}</a>`;
+                                linksHtml += `<button class="store-btn-secondary" onclick="openStoreLink('${STORES[key].url}${query}')">${STORES[key].label}</button>`;
                             }
                         }
                         linksHtml += `</div>`;
                     } else {
                         linksHtml += `<div class="secondary-stores">`;
                         for (let key in STORES) {
-                            linksHtml += `<a href="${STORES[key].url}${query}" class="store-btn-secondary" target="_blank">${STORES[key].label}</a>`;
+                            linksHtml += `<button class="store-btn-secondary" onclick="openStoreLink('${STORES[key].url}${query}')">${STORES[key].label}</button>`;
                         }
                         linksHtml += `</div>`;
                     }
@@ -706,7 +822,7 @@
             saveCategories();
         };
 
-        // --- ФОРМА И МОДАЛКИ (Без миганий) ---
+        // --- ФОРМА И МОДАЛКИ ---
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
             if (id) {
@@ -763,13 +879,11 @@
 
         function openModal(el) { 
             el.style.display = 'flex'; 
-            // Принудительно заставляем браузер обновить разметку перед запуском анимации
             el.offsetHeight; 
             requestAnimationFrame(() => { el.classList.add('active-modal'); }); 
         }
         
         function closeModal(el) { 
-            // Принудительно снимаем фокус с полей (скрываем клавиатуру), чтобы она не висела
             const activeElement = document.activeElement;
             if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT')) {
                 activeElement.blur();
@@ -784,7 +898,6 @@
             });
         });
 
-        // КАСТОМНЫЙ ЖЕСТ: Смахивание окна вниз
         function initSwipeToClose() {
             document.querySelectorAll('.modal-card').forEach(card => {
                 const handle = card.querySelector('.modal-drag-handle');
@@ -830,7 +943,6 @@
             });
         }
 
-        // --- Вкладки (Switch) ---
         document.getElementById('btnTabShelves').onclick = () => {
             currentTab = 'shelves';
             document.getElementById('tabSwitch').setAttribute('data-state', 'left');
@@ -846,7 +958,6 @@
             render();
         };
 
-        // --- Кнопка скролла наверх ---
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('btnScrollTop');
             if (window.scrollY > 300) btn.classList.add('visible');
@@ -856,7 +967,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // --- Настройки, Темы ---
         document.getElementById('themeRow').onclick = (e) => {
             const btn = e.target.closest('.theme-card-btn');
             if (btn) {
