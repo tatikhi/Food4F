@@ -428,7 +428,6 @@
         let CATEGORIES = [];
         let collapsedCategories = JSON.parse(localStorage.getItem('cb_collapsed') || '{}');
 
-        // Карты для сжатия
         const STORE_MAP = ['none', 'ozon', 'lavka', 'vkusvill', 'samokat'];
         const STATUS_MAP = ['ok', 'soon', 'empty'];
 
@@ -544,20 +543,16 @@
             }
         }
 
-        // ОТКРЫТИЕ ССЫЛОК: Невидимый клик заставляет iOS/Safari перехватывать ссылку и открывать приложения
+        // ОТКРЫТИЕ ССЫЛОК: Официальный метод Telegram, который корректно пробрасывает параметры
         window.openStoreLink = (url) => {
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            if (tg.openLink) {
+                tg.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
         };
 
-        // --- УЛЬТРА-СЖАТАЯ СИНХРОНИЗАЦИЯ ---
         window.openExportModal = () => {
-            // Форматируем элементы в крошечные массивы вместо объектов
             const compactItems = items.map(it => [
                 it.id,
                 it.name,
@@ -601,7 +596,6 @@
                 const str = decodeURIComponent(escape(atob(code)));
                 const data = JSON.parse(str);
                 
-                // Поддержка нового компактного формата
                 if (Array.isArray(data) && data.length === 2) {
                     CATEGORIES = data[0];
                     items = data[1].map(it => ({
@@ -613,7 +607,6 @@
                         store: STORE_MAP[it[5]] || 'none'
                     }));
                 } 
-                // Поддержка старого длинного формата (на всякий случай)
                 else if (data && data.c && data.i) {
                     CATEGORIES = data.c;
                     items = data.i.map(it => ({
@@ -637,7 +630,6 @@
                 showToast("Ошибка чтения кода. Проверьте, полностью ли скопирован.");
             }
         };
-        // ---------------------------------
 
         function sortItemsList(list) {
             return list.sort((a, b) => {
