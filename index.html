@@ -62,7 +62,7 @@
 
         body.theme-animated * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
 
-        input, select {
+        input, select, textarea {
             -webkit-user-select: text !important; user-select: text !important;
             caret-color: var(--accent-main);
             width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); 
@@ -70,6 +70,8 @@
             -webkit-appearance: none; appearance: none;
         }
         
+        textarea { resize: none; min-height: 100px; }
+
         select {
             background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: right 12px center; background-size: 14px;
@@ -173,10 +175,11 @@
 
         /* СИНХРОНИЗАЦИЯ */
         .btn-sync {
-            flex: 1; padding: 12px 10px; border-radius: 10px; border: none; font-weight: 600; font-size: 0.9rem;
-            background: var(--accent-light); color: var(--accent-main); cursor: pointer; transition: 0.2s;
+            flex: 1; padding: 12px 10px; border-radius: 10px; border: 1px solid var(--accent-main); font-weight: 600; font-size: 0.9rem;
+            background: var(--accent-light); color: var(--accent-main); cursor: pointer; transition: 0.2s; text-align: center;
         }
         .btn-sync:active { opacity: 0.7; }
+        .btn-primary-action { background: var(--ios-blue); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 16px; }
 
         /* НАСТРОЙКИ КАТЕГОРИЙ */
         .cat-settings-list { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
@@ -342,10 +345,10 @@
 
                 <div class="form-group" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
                     <label>Синхронизация с семьей</label>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.3;">Чтобы поделиться списком, скопируйте код и отправьте его мужу. При вводе кода список полностью заменяется на присланный.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.3;">Используйте эти кнопки для передачи списка мужу. Код содержит все товары и категории.</p>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn-sync" onclick="exportSyncCode()">Скопировать мой код</button>
-                        <button type="button" class="btn-sync" onclick="importSyncCode()">Ввести код мужа</button>
+                        <button type="button" class="btn-sync" onclick="openExportModal()">Скопировать мой код</button>
+                        <button type="button" class="btn-sync" onclick="openImportModal()">Ввести код мужа</button>
                     </div>
                 </div>
                 
@@ -372,6 +375,40 @@
         </div>
     </div>
 
+    <!-- Модальное окно: Экспорт кода -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-card">
+            <div class="modal-drag-handle"></div>
+            <div class="modal-header-nav">
+                <div></div>
+                <div class="modal-nav-title brand-font">Ваш код списка</div>
+                <button class="modal-nav-btn" onclick="closeModal(document.getElementById('exportModal'))">Закрыть</button>
+            </div>
+            <div class="modal-body-scrollable">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">Нажмите «Скопировать» и отправьте этот текст мужу сообщением.</p>
+                <textarea id="exportTextarea" readonly></textarea>
+                <button class="btn-primary-action" onclick="copyCodeToClipboard()">Скопировать код</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Импорт кода -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal-card">
+            <div class="modal-drag-handle"></div>
+            <div class="modal-header-nav">
+                <button class="modal-nav-btn" onclick="closeModal(document.getElementById('importModal'))">Отмена</button>
+                <div class="modal-nav-title brand-font">Вставить код</div>
+                <div></div>
+            </div>
+            <div class="modal-body-scrollable">
+                <p style="font-size: 0.9rem; color: var(--red, #CD3434); margin-bottom: 12px; line-height: 1.4; font-weight: 600;">Внимание: это полностью заменит ваш текущий список на тот, что прислал муж.</p>
+                <textarea id="importTextarea" placeholder="Вставьте присланный длинный код сюда..."></textarea>
+                <button class="btn-primary-action" onclick="applyImportCode()">Применить список</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Кнопка возврата наверх -->
     <button id="btnScrollTop" class="btn-scroll-top">
         <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
@@ -394,9 +431,10 @@
         let CATEGORIES = [];
         let collapsedCategories = JSON.parse(localStorage.getItem('cb_collapsed') || '{}');
 
+        // Обновленные ссылки с параметрами для открытия напрямую (через tg.openLink)
         const STORES = {
-            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
-            'lavka': { label: 'Я.Лавка', url: 'https://lavka.yandex.ru/search?text=' },
+            'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?category=25000&text=' },
+            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' },
             'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
             'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
         };
@@ -476,7 +514,7 @@
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
-            // Миграция со старого "маркета" на лавку
+            // Удаляем Маркет, принудительно переводим все товары с 'market' на 'lavka'
             items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; });
             
             document.getElementById('quickSort').value = sortPref;
@@ -507,53 +545,52 @@
             }
         }
 
-        // ОТКРЫТИЕ ССЫЛОК В ПРИЛОЖЕНИЯХ (Deep Links)
+        // ОТКРЫТИЕ ССЫЛОК: Использует системный метод Telegram для переадресации в приложения ОС (iOS/Android)
         window.openStoreLink = (url) => {
             if (tg.openLink) {
-                tg.openLink(url);
+                tg.openLink(url); 
             } else {
                 window.open(url, '_blank');
             }
         };
 
-        // СИНХРОНИЗАЦИЯ (Экспорт/Импорт)
-        window.exportSyncCode = () => {
+        // --- НОВЫЕ ОКНА СИНХРОНИЗАЦИИ ---
+        window.openExportModal = () => {
             const data = {
                 c: CATEGORIES,
                 i: items.map(it => ({ id: it.id, n: it.name, c: it.cat, no: it.note, s: it.status, st: it.store }))
             };
-            const str = JSON.stringify(data);
-            const encoded = btoa(unescape(encodeURIComponent(str)));
-            
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(encoded).then(() => {
-                    showToast("Код скопирован! Отправьте его в чат.");
-                }).catch(() => fallbackCopy(encoded));
-            } else {
-                fallbackCopy(encoded);
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+            document.getElementById('exportTextarea').value = encoded;
+            openModal(document.getElementById('exportModal'));
+        };
+
+        window.copyCodeToClipboard = () => {
+            const textarea = document.getElementById('exportTextarea');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast("Успешно скопировано!");
+                setTimeout(() => closeModal(document.getElementById('exportModal')), 1000);
+            } catch (err) {
+                showToast("Не удалось скопировать автоматически, скопируйте текст вручную.");
             }
         };
 
-        function fallbackCopy(text) {
-            const input = document.createElement('textarea');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            try {
-                document.execCommand('copy');
-                showToast("Код скопирован! Отправьте его в чат.");
-            } catch (err) {
-                prompt("Скопируйте этот код вручную:", text);
-            }
-            document.body.removeChild(input);
-        }
+        window.openImportModal = () => {
+            document.getElementById('importTextarea').value = '';
+            openModal(document.getElementById('importModal'));
+        };
 
-        window.importSyncCode = () => {
-            const code = prompt("Вставьте код, который вам прислали:\n\nВнимание: это полностью заменит ваш текущий список на новый!");
-            if (!code) return;
+        window.applyImportCode = () => {
+            const code = document.getElementById('importTextarea').value.trim();
+            if (!code) return showToast("Код не вставлен!");
+            
             try {
-                const str = decodeURIComponent(escape(atob(code.trim())));
+                const str = decodeURIComponent(escape(atob(code)));
                 const data = JSON.parse(str);
+                
                 if (data && data.c && data.i) {
                     CATEGORIES = data.c;
                     items = data.i.map(it => ({
@@ -567,15 +604,16 @@
                     saveApp();
                     saveCategories();
                     render();
-                    closeModal(document.getElementById('settingsModal'));
-                    showToast("Список успешно обновлен!");
+                    closeModal(document.getElementById('importModal'));
+                    showToast("Ваш список успешно обновлен!");
                 } else {
-                    showToast("Неверный формат кода. Попробуйте еще раз.");
+                    showToast("Неверный формат кода.");
                 }
             } catch(e) {
-                showToast("Ошибка чтения кода. Проверьте, полностью ли вы его скопировали.");
+                showToast("Ошибка чтения. Проверьте, полностью ли скопирован код.");
             }
         };
+        // ---------------------------------
 
         function sortItemsList(list) {
             return list.sort((a, b) => {
@@ -587,6 +625,7 @@
             });
         }
 
+        // Поиск строго по началу первого слова названия
         function isMatchSearch(item, queryStr) {
             if (!queryStr) return true;
             const nameLower = item.name.toLowerCase().trim();
@@ -646,8 +685,6 @@
                 if (catItems.length === 0) return;
                 
                 catItems = sortItemsList(catItems);
-                
-                // Если идет поиск, принудительно раскрываем все гармошки, чтобы видеть результаты
                 const isCollapsed = searchQuery ? false : collapsedCategories[cat];
 
                 let html = `
@@ -749,7 +786,6 @@
             }
         }
 
-        // --- УПРАВЛЕНИЕ КАТЕГОРИЯМИ ---
         function populateCatSelect() {
             const sel = document.getElementById('inpCat');
             sel.innerHTML = '';
@@ -885,7 +921,7 @@
         
         function closeModal(el) { 
             const activeElement = document.activeElement;
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT')) {
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT' || activeElement.tagName === 'TEXTAREA')) {
                 activeElement.blur();
             }
             el.classList.remove('active-modal'); 
