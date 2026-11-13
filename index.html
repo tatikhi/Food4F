@@ -52,7 +52,7 @@
         body {
             background-color: var(--bg-main); color: var(--text-primary);
             min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            padding: 20px 14px 40px; font-size: 16px;
+            padding: 20px 14px 100px; font-size: 16px; /* 100px чтобы скролл не перекрывал нижние карточки */
         }
 
         body.theme-animated * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
@@ -86,7 +86,7 @@
             color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-soft);
         }
 
-        .main-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 480px; padding: 18px 16px; border: 1px solid var(--border-color); }
+        .main-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 480px; padding: 18px 16px; border: 1px solid var(--border-color); position: relative; }
         
         .segmented-switch { position: relative; display: flex; background: var(--bg-main); border-radius: 14px; padding: 4px; margin-bottom: 16px; border: 1px solid var(--border-color); }
         .segmented-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); background: var(--surface); border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
@@ -95,7 +95,7 @@
         .segmented-btn.active { color: var(--text-primary); }
 
         /* УПРАВЛЕНИЕ СПИСКОМ (Поиск + Сортировка) */
-        .controls-row { display: flex; gap: 8px; margin-bottom: 16px; width: 100%; }
+        .controls-row { display: flex; gap: 8px; margin-bottom: 12px; width: 100%; }
         
         .search-bar-wrapper { position: relative; flex: 1; }
         .search-bar-wrapper input { padding-left: 40px; border-radius: 10px; background: var(--bg-main); border: 1px solid var(--border-color); width: 100%; }
@@ -151,9 +151,9 @@
             padding: 6px 10px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid var(--border-color);
         }
         
-        .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 12px; }
+        .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
 
-        /* ИНТЕРФЕЙС НАСТРОЕК */
+        /* ИНТЕРФЕЙС НАСТРОЕК & КАТЕГОРИЙ */
         .inset-list-group { margin-bottom: 20px; width: 100%; }
         .inset-list { background: var(--surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; }
         .inset-list-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 1rem; color: var(--text-primary); cursor: pointer; transition: background 0.2s ease; }
@@ -161,21 +161,29 @@
         .inset-list-item:active { background: var(--bg-main); }
         .inset-list-item.center-action { justify-content: center; color: var(--ios-blue); font-weight: 600; }
 
+        .cat-settings-list { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+        .cat-item-setting { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border-color); }
+        .cat-item-setting:last-child { border-bottom: none; }
+        .cat-item-setting span { font-weight: 500; font-size: 0.95rem; }
+        .cat-item-setting-del { color: var(--red, #CD3434); background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.7; }
+        .cat-item-setting-del:active { opacity: 1; }
+
         /* МОДАЛЬНЫЕ ОКНА */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active-modal { opacity: 1; }
         
-        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 85%; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
+        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
         .modal-overlay.active-modal .modal-card { transform: translateY(0); }
         
         .modal-drag-handle { width: 100%; padding: 12px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; }
         .modal-drag-handle::before { content: ''; width: 38px; height: 5px; background: var(--border-color); border-radius: 3px; }
         
-        .modal-header-nav { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .modal-header-nav { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; flex-shrink: 0; }
         .modal-nav-btn { background: transparent; border: none; color: var(--accent-main); font-size: 1.05rem; font-weight: 600; cursor: pointer; }
         .modal-nav-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
 
-        .modal-body-scrollable { overflow-y: auto; padding-bottom: 20px; }
+        /* Огромный padding-bottom позволяет скроллить контент вверх, чтобы клавиатура его не закрывала */
+        .modal-body-scrollable { overflow-y: auto; padding-bottom: 60vh; flex: 1; }
 
         /* НАСТРОЙКИ (ТЕМЫ) */
         .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
@@ -191,6 +199,22 @@
 
         .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; }
         .toast.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* Кнопка ВВЕРХ */
+        .btn-scroll-top {
+            position: fixed; bottom: 24px; right: 20px;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: var(--ios-blue); color: #FFF;
+            border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(20px);
+            z-index: 900;
+        }
+        .btn-scroll-top.visible {
+            opacity: 1; pointer-events: auto; transform: translateY(0);
+        }
+        .btn-scroll-top svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 </head>
 <body>
@@ -224,9 +248,10 @@
             </select>
         </div>
 
-        <div id="contentContainer"></div>
-        
+        <!-- Кнопка добавлена сверху списка -->
         <button class="btn-add" id="btnAddItem" style="display: none;">+ Добавить новый товар</button>
+
+        <div id="contentContainer"></div>
     </div>
 
     <!-- Модальное окно Редактирования/Создания -->
@@ -279,6 +304,15 @@
             </div>
             <div class="modal-body-scrollable">
                 
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label>Категории</label>
+                    <div id="catSettingsList" class="cat-settings-list"></div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <input type="text" id="inpNewCat" placeholder="Название новой категории" style="flex:1;">
+                        <button type="button" id="btnAddCat" style="background: var(--ios-blue); color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-weight: 600; cursor: pointer;">Добавить</button>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Тема оформления</label>
                     <div class="theme-grid" id="themeRow">
@@ -301,14 +335,19 @@
         </div>
     </div>
 
+    <!-- Кнопка возврата наверх -->
+    <button id="btnScrollTop" class="btn-scroll-top">
+        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+
     <div class="toast" id="toast"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood"];
-
+        let CATEGORIES = [];
+        
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/search/?text=' },
             'market': { label: 'Я.Маркет', url: 'https://market.yandex.ru/search?text=' },
@@ -334,7 +373,7 @@
         let searchQuery = '';
         let sortPref = localStorage.getItem('cb_sort') || 'date';
 
-        const STORE_KEYS = { items: 'stock_items_v4' }; 
+        const STORE_KEYS = { items: 'stock_items_v4', cats: 'stock_cats_v1' }; 
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -369,17 +408,31 @@
 
         function saveApp() {
             safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
-            if (tg.CloudStorage) {
-                saveToCloudChunked('cloud_items_v4', items);
-            }
+            if (tg.CloudStorage) saveToCloudChunked('cloud_items_v4', items);
+        }
+
+        function saveCategories() {
+            safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
+            if (tg.CloudStorage) saveToCloudChunked('cloud_cats_v1', CATEGORIES);
+            populateCatSelect();
+            renderSettingsCats();
+            render();
         }
 
         async function initApp() {
-            populateCatSelect();
+            // Загрузка категорий
+            const localCats = safeStorage.get(STORE_KEYS.cats);
+            if (localCats) {
+                CATEGORIES = JSON.parse(localCats);
+            } else {
+                CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood"];
+                saveCategories();
+            }
+
+            // Загрузка товаров
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
-            // Настраиваем переключатель сортировки на главном экране
             document.getElementById('quickSort').value = sortPref;
             document.getElementById('quickSort').onchange = (e) => {
                 sortPref = e.target.value;
@@ -387,15 +440,23 @@
                 render();
             };
 
+            populateCatSelect();
+            renderSettingsCats();
             render();
 
             if (tg.CloudStorage) {
                 const cloudItems = await loadFromCloudChunked('cloud_items_v4');
-                if (cloudItems && cloudItems.length > 0) {
-                    items = cloudItems;
-                    render();
-                }
+                const cloudCats = await loadFromCloudChunked('cloud_cats_v1');
+                
+                if (cloudCats && cloudCats.length > 0) CATEGORIES = cloudCats;
+                if (cloudItems && cloudItems.length > 0) items = cloudItems;
+                
+                safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
                 safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+                
+                populateCatSelect();
+                renderSettingsCats();
+                render();
             }
         }
 
@@ -409,15 +470,10 @@
             });
         }
 
-        // УМНЫЙ ПОИСК: Ищет только по началу слов
         function isMatchSearch(text, queryStr) {
             if (!text || !queryStr) return false;
-            // Разбиваем текст на отдельные слова (разделители: пробелы, точки, запятые, скобки, дефисы)
             const textWords = text.toLowerCase().split(/[\s\-.,()]+/);
-            // Разбиваем поисковый запрос на отдельные слова
             const queryWords = queryStr.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-            
-            // Каждое слово из запроса должно совпадать с НАЧАЛОМ какого-либо слова в тексте
             return queryWords.every(qw => textWords.some(tw => tw.startsWith(qw)));
         }
 
@@ -444,7 +500,6 @@
 
         function renderShelves(container) {
             container.innerHTML = ''; 
-            
             let filteredItems = searchQuery 
                 ? items.filter(i => isMatchSearch(i.name, searchQuery) || isMatchSearch(i.note, searchQuery))
                 : [...items];
@@ -550,12 +605,41 @@
             }
         }
 
+        // --- УПРАВЛЕНИЕ КАТЕГОРИЯМИ ---
         function populateCatSelect() {
             const sel = document.getElementById('inpCat');
             sel.innerHTML = '';
             CATEGORIES.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
+        function renderSettingsCats() {
+            const list = document.getElementById('catSettingsList');
+            list.innerHTML = '';
+            CATEGORIES.forEach(cat => {
+                list.innerHTML += `
+                <div class="cat-item-setting">
+                    <span>${cat}</span>
+                    <button class="cat-item-setting-del" onclick="deleteCategory('${cat}')">×</button>
+                </div>`;
+            });
+        }
+
+        document.getElementById('btnAddCat').onclick = () => {
+            const val = document.getElementById('inpNewCat').value.trim();
+            if (!val) return;
+            if (CATEGORIES.includes(val)) return showToast("Уже существует");
+            CATEGORIES.push(val);
+            document.getElementById('inpNewCat').value = '';
+            saveCategories();
+        };
+
+        window.deleteCategory = (catName) => {
+            if (CATEGORIES.length <= 1) return showToast("Нельзя удалить последнюю!");
+            CATEGORIES = CATEGORIES.filter(c => c !== catName);
+            saveCategories();
+        };
+
+        // --- ФОРМА ---
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
             if (id) {
@@ -580,7 +664,7 @@
                 document.getElementById('inpName').value = '';
                 document.getElementById('inpNote').value = '';
                 document.getElementById('inpStore').value = 'none';
-                document.getElementById('inpCat').value = CATEGORIES[0];
+                document.getElementById('inpCat').value = CATEGORIES.length > 0 ? CATEGORIES[0] : "";
                 document.getElementById('btnDeleteForm').style.display = 'none';
             }
             openModal(modal);
@@ -610,12 +694,38 @@
             saveApp(); render(); closeModal(document.getElementById('formModal'));
         };
 
-        // --- Закрытие окон по тапу вне формы (на затемненный фон) ---
+        // ФИКС ДЛЯ КЛАВИАТУРЫ: Скроллим к полю, чтобы его было видно + отключаем дергающуюся анимацию окна
+        document.querySelectorAll('#formModal input, #formModal select').forEach(input => {
+            input.addEventListener('focus', function() {
+                setTimeout(() => {
+                    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+
+        function openModal(el) { 
+            el.style.display = 'flex'; 
+            requestAnimationFrame(() => {
+                el.classList.add('active-modal');
+                let card = el.querySelector('.modal-card');
+                if (card) {
+                    card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    // Отключаем анимацию после появления, чтобы при ресайзе от клавиатуры окно не прыгало
+                    setTimeout(() => { if (el.classList.contains('active-modal')) card.style.transition = 'none'; }, 350);
+                }
+            }); 
+        }
+        
+        function closeModal(el) { 
+            let card = el.querySelector('.modal-card');
+            if (card) card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+            el.classList.remove('active-modal'); 
+            setTimeout(() => el.style.display = 'none', 300); 
+        }
+
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    closeModal(overlay);
-                }
+                if (e.target === overlay) closeModal(overlay);
             });
         });
 
@@ -635,7 +745,17 @@
             render();
         };
 
-        // --- Настройки, Темы и Модалки ---
+        // --- Кнопка скролла наверх ---
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('btnScrollTop');
+            if (window.scrollY > 300) btn.classList.add('visible');
+            else btn.classList.remove('visible');
+        });
+        document.getElementById('btnScrollTop').onclick = () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // --- Настройки, Темы ---
         document.getElementById('themeRow').onclick = (e) => {
             const btn = e.target.closest('.theme-card-btn');
             if (btn) {
@@ -646,20 +766,14 @@
             }
         };
 
-        function openModal(el) { el.style.display = 'flex'; requestAnimationFrame(() => el.classList.add('active-modal')); }
-        function closeModal(el) { el.classList.remove('active-modal'); setTimeout(() => el.style.display = 'none', 300); }
-
         document.getElementById('btnOpenSettings').onclick = () => openModal(document.getElementById('settingsModal'));
         document.getElementById('btnCloseSettings').onclick = () => closeModal(document.getElementById('settingsModal'));
         document.getElementById('btnCancelForm').onclick = () => closeModal(document.getElementById('formModal'));
         document.getElementById('btnAddItem').onclick = () => openForm(null);
 
-        // Обновление приложения (жесткая перезагрузка)
         document.getElementById('btnForceUpdate').onclick = () => {
             showToast('Обновление...');
-            setTimeout(() => {
-                window.location.replace(window.location.pathname + "?v=" + Date.now());
-            }, 300);
+            setTimeout(() => { window.location.replace(window.location.pathname + "?v=" + Date.now()); }, 300);
         };
 
         function showToast(msg) {
