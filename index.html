@@ -8,7 +8,7 @@
     <script>
         (function() {
             try {
-                var savedTheme = localStorage.getItem('cb_theme') || 'sunlit';
+                var savedTheme = localStorage.getItem('food4f_theme') || 'sunlit';
                 document.documentElement.setAttribute('data-theme', savedTheme);
             } catch(e) {}
         })();
@@ -126,7 +126,7 @@
         .category-container.collapsed .category-arrow { transform: rotate(-90deg); }
         .category-container.collapsed .category-content { display: none; }
 
-        /* ЭЛЕМЕНТЫ ТОВАРОВ */
+        /* ЭЛЕМЕНТЫ ТОВАРОВ И БИРКИ */
         .routine-item { background: var(--surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; cursor: pointer; transition: 0.2s; }
         .routine-item:active { background: var(--bg-main); }
         .routine-item-vertical { flex-direction: column; align-items: stretch; cursor: default; }
@@ -134,7 +134,12 @@
         
         .item-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
         .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; }
+        
+        .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;}
+        .store-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; color: #FFF; border-radius: 4px; padding: 2px 5px; flex-shrink: 0; }
+        .badge-ozon { background: #005BFF; }
+        .badge-lavka { background: #FFCC00; color: #000; }
+        
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
         /* СТАТУСЫ И КНОПКИ */
@@ -173,6 +178,12 @@
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
 
+        .reminder-banner {
+            background: var(--accent-light); color: var(--accent-main); padding: 12px 14px;
+            border-radius: 12px; font-size: 0.85rem; font-weight: 600; text-align: center; 
+            margin-bottom: 16px; border: 1px dashed var(--accent-main); line-height: 1.4;
+        }
+
         /* СИНХРОНИЗАЦИЯ */
         .btn-sync {
             flex: 1; padding: 12px 10px; border-radius: 10px; border: 1px solid var(--accent-main); font-weight: 600; font-size: 0.9rem;
@@ -188,8 +199,8 @@
         .cat-item-setting-content { flex: 1; display: flex; align-items: center; gap: 8px; }
         .cat-item-setting-name { font-weight: 500; font-size: 0.95rem; }
         .cat-item-setting-input { display: none; flex: 1; padding: 4px 8px; border: 1px solid var(--accent-main); border-radius: 6px; font-size: 0.95rem; }
-        .cat-item-actions { display: flex; gap: 12px; align-items: center; }
-        .cat-item-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.6; display: flex; align-items: center; justify-content: center; }
+        .cat-item-actions { display: flex; gap: 6px; align-items: center; }
+        .cat-item-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.6; display: flex; align-items: center; justify-content: center; padding: 4px; }
         .cat-item-btn:active { opacity: 1; }
         .cat-item-btn.edit { color: var(--ios-blue); }
         .cat-item-btn.save { color: rgb(47, 139, 88); display: none; }
@@ -319,8 +330,6 @@
                         <option value="none">Не выбран</option>
                         <option value="ozon">Ozon Fresh</option>
                         <option value="lavka">Яндекс Лавка</option>
-                        <option value="vkusvill">ВкусВилл</option>
-                        <option value="samokat">Самокат</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -426,34 +435,28 @@
         updateViewportHeight();
 
         let CATEGORIES = [];
-        let collapsedCategories = JSON.parse(localStorage.getItem('cb_collapsed') || '{}');
+        let collapsedCategories = JSON.parse(localStorage.getItem('food4f_collapsed') || '{}');
 
-        const STORE_MAP = ['none', 'ozon', 'lavka', 'vkusvill', 'samokat'];
+        // Оставляем только работающие магазины
+        const STORE_MAP = ['none', 'ozon', 'lavka'];
         const STATUS_MAP = ['ok', 'soon', 'empty'];
 
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
-            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' },
-            'vkusvill': { label: 'ВкусВилл', url: 'https://vkusvill.ru/search/?text=' },
-            'samokat': { label: 'Самокат', url: 'https://samokat.ru/search?q=' }
+            'lavka': { label: 'Я.Лавка', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&rs=eJwzcv7EaMXBKLDwEKsEg8aBla0sGs-6eTR6jrJqbATi968eMGusPsmq8eMUq8bZ06waq46wauwFSvQeZtV43s2zl-nocwEHAIZ6G30%2C&searchContext=sins_ctx&text=' }
         };
 
         const initialProducts = [
-            {n: "Томаты"}, {n: "Огурцы"}, {n: "Яблоки"}, {n: "Бананы"},
-            {n: "Брокколи"}, {n: "Тыква", note: "нарезанная"}, {n: "Морковь", note: "кубиками"}, {n: "Черника / Смородина чёрная"}, {n: "Картофель фри"}, {n: "Вареники", note: "с картофелем и грибами"}, {n: "Сырники", note: "из рикотты"}, {n: "Лепёшки роти", note: "слоёные / с зелёным луком"}, {n: "Тесто слоёное бездрожжевое"}, {n: "Тесто слоёное дрожжевое"}, {n: "Булочки", note: "для бургеров / с кунжутом"},
-            {n: "Фарш из куриной грудки"}, {n: "Голень куриная"}, {n: "Фрикадельки", note: "куриные / из индейки"}, {n: "Сосиски", note: "куриные"}, {n: "Рыбные палочки", note: "из филе минтая"}, {n: "Тунец", note: "консервированный в собственном соку"},
-            {n: "Яйца куриные (С1)"}, {n: "Молоко 2,5%"}, {n: "Кефир 3,2%"}, {n: "Ряженка 3,2%"}, {n: "Сметана 15%"}, {n: "Творожок со сливками 5%"}, {n: "Творог 9%"}, {n: "Масло сливочное 82,5%"}, {n: "Сырок глазированный"},
-            {n: "Сыр творожный сливочный 65%"}, {n: "Сыр полутвёрдый тёртый 45%"},
-            {n: "Макаронные изделия", note: "из твёрдых сортов: вермишель, фигурные"}, {n: "Мука"}, {n: "Листы для лазаньи"}, {n: "Рис"}, {n: "Крупа гречневая"}, {n: "Чечевица красная"}, {n: "Овсяные хлопья"}, {n: "Сахар тростниковый"},
-            {n: "Соус для макарон / томатный"}, {n: "Бургер-соус"}, {n: "Соус десертный (шоколадный)"}, {n: "Зажарка для супа", note: "с морковью и луком"}, {n: "Смеси приправ для плова"}, {n: "Бумага для жарки филе"},
-            {n: "Кофе в дрип-пакетах"}, {n: "Сгущённое молоко", note: "с бананом"}, {n: "Мороженое", note: "пломбир в вафельном стаканчике"}, {n: "Желе порционное (низкокалорийное)"}, {n: "Желатин пищевой"}, {n: "Ванильный сахар"},
-            {n: "Бумажные полотенца"}, {n: "Губки для посуды"}, {n: "Пергамент / бумага для выпечки"}, {n: "Сменные кассеты / фильтры для воды"}, {n: "Стиральный порошок"}, {n: "Глазные капли Стиллавит"}
-        ].map((p, i) => ({ id: i+1, name: p.n, cat: "Холодильник", note: p.note || '', status: 'ok', store: 'none' }));
+            {n: "Томаты", cat: "Холодильник"}, {n: "Огурцы", cat: "Холодильник"}, {n: "Яблоки", cat: "Холодильник"}, {n: "Бананы", cat: "Холодильник"},
+            {n: "Брокколи", cat: "Холодильник"}, {n: "Картофель фри", cat: "Морозилка"}, {n: "Вареники", note: "с картофелем и грибами", cat: "Морозилка"}, 
+            {n: "Яйца куриные (С1)", cat: "Холодильник"}, {n: "Молоко 2,5%", cat: "Холодильник"}, {n: "Масло сливочное 82,5%", cat: "Холодильник"},
+            {n: "Макаронные изделия", cat: "Кухня"}, {n: "Рис", cat: "Кухня"}, {n: "Глазные капли Стиллавит", cat: "Аптека"}, {n: "Стиральный порошок", cat: "NonFood"}
+        ].map((p, i) => ({ id: i+1, name: p.n, cat: p.cat, note: p.note || '', status: 'ok', store: 'none' }));
 
         let items = [];
         let currentTab = 'shelves';
+        let sortPref = localStorage.getItem('food4f_sort') || 'date';
         let searchQuery = '';
-        let sortPref = localStorage.getItem('cb_sort') || 'date';
 
         const STORE_KEYS = { items: 'stock_items_v4', cats: 'stock_cats_v1' }; 
 
@@ -501,24 +504,42 @@
             render();
         }
 
+        // ФУНКЦИЯ-САНИТАР: проверяет, не потерялись ли категории из официального списка
+        function syncCategoriesWithItems() {
+            let changed = false;
+            items.forEach(i => {
+                if (i.cat && !CATEGORIES.includes(i.cat)) {
+                    CATEGORIES.push(i.cat);
+                    changed = true;
+                }
+            });
+            if (changed) saveCategories();
+        }
+
         async function initApp() {
             const localCats = safeStorage.get(STORE_KEYS.cats);
             if (localCats) {
                 CATEGORIES = JSON.parse(localCats);
             } else {
-                CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood"];
+                CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"];
                 saveCategories();
             }
 
             const localItems = safeStorage.get(STORE_KEYS.items);
             if (localItems) { items = JSON.parse(localItems); } else { items = initialProducts; saveApp(); }
             
-            items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; });
+            items.forEach(i => { 
+                if(i.store === 'market') i.store = 'lavka'; 
+                if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none';
+            });
             
+            // Вызываем принудительную синхронизацию категорий
+            syncCategoriesWithItems();
+
             document.getElementById('quickSort').value = sortPref;
             document.getElementById('quickSort').onchange = (e) => {
                 sortPref = e.target.value;
-                localStorage.setItem('cb_sort', sortPref);
+                localStorage.setItem('food4f_sort', sortPref);
                 render();
             };
 
@@ -534,6 +555,9 @@
                 if (cloudCats && cloudCats.length > 0) CATEGORIES = cloudCats;
                 if (cloudItems && cloudItems.length > 0) items = cloudItems;
                 
+                // Вызываем принудительную синхронизацию после загрузки из облака
+                syncCategoriesWithItems();
+
                 safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
                 safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
                 
@@ -543,28 +567,20 @@
             }
         }
 
-        // ОТКРЫТИЕ ССЫЛОК: Официальный метод Telegram, который корректно пробрасывает параметры
         window.openStoreLink = (url) => {
-            if (tg.openLink) {
-                tg.openLink(url);
-            } else {
-                window.open(url, '_blank');
-            }
+            if (tg.openLink) { tg.openLink(url); } else { window.open(url, '_blank'); }
         };
 
         window.openExportModal = () => {
             const compactItems = items.map(it => [
-                it.id,
-                it.name,
+                it.id, it.name,
                 CATEGORIES.indexOf(it.cat) > -1 ? CATEGORIES.indexOf(it.cat) : 0,
                 it.note || '',
                 STATUS_MAP.indexOf(it.status) > -1 ? STATUS_MAP.indexOf(it.status) : 0,
                 STORE_MAP.indexOf(it.store) > -1 ? STORE_MAP.indexOf(it.store) : 0
             ]);
-            
             const payload = [CATEGORIES, compactItems];
-            const str = JSON.stringify(payload);
-            const encoded = btoa(unescape(encodeURIComponent(str)));
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
             
             document.getElementById('exportTextarea').value = encoded;
             openModal(document.getElementById('exportModal'));
@@ -621,9 +637,12 @@
                     return showToast("Неверный формат кода.");
                 }
                 
-                saveApp();
-                saveCategories();
-                render();
+                items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none'; });
+
+                // Вызываем принудительную синхронизацию категорий при импорте чужого кода
+                syncCategoriesWithItems();
+
+                saveApp(); saveCategories(); render();
                 closeModal(document.getElementById('importModal'));
                 showToast("Успешно обновлено!");
             } catch(e) {
@@ -633,11 +652,8 @@
 
         function sortItemsList(list) {
             return list.sort((a, b) => {
-                if (sortPref === 'alpha') {
-                    return a.name.localeCompare(b.name, 'ru');
-                } else {
-                    return a.id - b.id; 
-                }
+                if (sortPref === 'alpha') { return a.name.localeCompare(b.name, 'ru'); } 
+                else { return a.id - b.id; }
             });
         }
 
@@ -671,22 +687,18 @@
 
         document.getElementById('appContainer').addEventListener('click', (e) => {
             const searchInput = document.getElementById('searchInput');
-            if (e.target !== searchInput && document.activeElement === searchInput) {
-                searchInput.blur();
-            }
+            if (e.target !== searchInput && document.activeElement === searchInput) searchInput.blur();
         });
 
         window.toggleCategory = (catName) => {
             collapsedCategories[catName] = !collapsedCategories[catName];
-            localStorage.setItem('cb_collapsed', JSON.stringify(collapsedCategories));
+            localStorage.setItem('food4f_collapsed', JSON.stringify(collapsedCategories));
             renderShelves(document.getElementById('contentContainer'));
         };
 
         function renderShelves(container) {
             container.innerHTML = ''; 
-            let filteredItems = searchQuery 
-                ? items.filter(i => isMatchSearch(i, searchQuery))
-                : [...items];
+            let filteredItems = searchQuery ? items.filter(i => isMatchSearch(i, searchQuery)) : [...items];
 
             if (filteredItems.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">Ничего не найдено</div>`;
@@ -705,18 +717,20 @@
                 let html = `
                 <div class="category-container ${isCollapsed ? 'collapsed' : ''}" id="cat-block-${cat}">
                     <div class="category-title" onclick="toggleCategory('${cat}')">
-                        <div class="category-title-left">
-                            <span>${cat}</span>
-                        </div>
+                        <div class="category-title-left"><span>${cat}</span></div>
                         <svg class="category-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
                     <div class="category-content">`;
 
                 catItems.forEach(item => {
+                    let storeBadge = '';
+                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">О</span>';
+                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">Я</span>';
+
                     html += `
                     <div class="routine-item" onclick="openForm(${item.id})">
                         <div class="item-info">
-                            <div class="item-name">${item.name}</div>
+                            <div class="item-name">${item.name} ${storeBadge}</div>
                             ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
                         </div>
                         <div class="status-controls" onclick="event.stopPropagation()">
@@ -726,22 +740,25 @@
                         </div>
                     </div>`;
                 });
-
                 html += `</div></div>`;
                 container.innerHTML += html;
             });
         }
 
         function renderShopping(container) {
+            container.innerHTML += `<div class="reminder-banner">Доп. площадки: Самокат / ВкусВилл / Т-Банк Город / Перекрёсток</div>`;
+
             const urgencies = [
                 { id: 'empty', label: 'Закончилось', color: 'var(--red, #CD3434)' },
                 { id: 'soon', label: 'Заканчивается', color: 'var(--orange, #D7871E)' }
             ];
             
+            let itemsFound = false;
+
             urgencies.forEach(urg => {
                 let list = items.filter(i => i.status === urg.id);
                 if (list.length === 0) return;
-                
+                itemsFound = true;
                 list = sortItemsList(list);
 
                 const svgAlert = `<svg class="svg-icon" style="width: 14px; height: 14px; margin-right: 4px; color: ${urg.color}"><circle cx="12" cy="12" r="10" fill="currentColor"></circle></svg>`;
@@ -750,55 +767,41 @@
                 list.forEach(item => {
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
                     
+                    let storeBadge = '';
+                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">О</span>';
+                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">Я</span>';
+
                     let linksHtml = '';
                     if (item.store && STORES[item.store]) {
                         const st = STORES[item.store];
                         linksHtml += `<button class="store-btn-primary" onclick="openStoreLink('${st.url}${query}')"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> ${st.label}</button>`;
-                        
-                        linksHtml += `<div class="secondary-stores">`;
-                        for (let key in STORES) {
-                            if (key !== item.store) {
-                                linksHtml += `<button class="store-btn-secondary" onclick="openStoreLink('${STORES[key].url}${query}')">${STORES[key].label}</button>`;
-                            }
-                        }
-                        linksHtml += `</div>`;
-                    } else {
-                        linksHtml += `<div class="secondary-stores">`;
-                        for (let key in STORES) {
-                            linksHtml += `<button class="store-btn-secondary" onclick="openStoreLink('${STORES[key].url}${query}')">${STORES[key].label}</button>`;
-                        }
-                        linksHtml += `</div>`;
                     }
 
                     html += `
                     <div class="routine-item routine-item-vertical">
                         <div class="item-header">
                             <div class="item-info">
-                                <div class="item-name">${item.name}</div>
+                                <div class="item-name">${item.name} ${storeBadge}</div>
                                 ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
                             </div>
                             <button class="btn-check-done" onclick="setStatus(${item.id}, 'ok')">
                                 <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             </button>
                         </div>
-                        <div class="store-links">${linksHtml}</div>
+                        ${linksHtml ? `<div class="store-links">${linksHtml}</div>` : ''}
                     </div>`;
                 });
                 container.innerHTML += html;
             });
 
-            if(items.filter(i => i.status !== 'ok').length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">Сейчас всё куплено</div>`;
+            if(!itemsFound) {
+                container.innerHTML += `<div style="text-align:center; padding: 40px; color: var(--text-muted); font-weight: 500;">Сейчас всё куплено</div>`;
             }
         }
 
         function setStatus(id, newStatus) {
             const item = items.find(i => i.id === id);
-            if (item) {
-                item.status = newStatus;
-                saveApp(); 
-                render();
-            }
+            if (item) { item.status = newStatus; saveApp(); render(); }
         }
 
         function populateCatSelect() {
@@ -807,10 +810,22 @@
             CATEGORIES.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
+        window.moveCategory = (index, dir) => {
+            if (dir === -1 && index > 0) {
+                [CATEGORIES[index-1], CATEGORIES[index]] = [CATEGORIES[index], CATEGORIES[index-1]];
+            } else if (dir === 1 && index < CATEGORIES.length - 1) {
+                [CATEGORIES[index+1], CATEGORIES[index]] = [CATEGORIES[index], CATEGORIES[index+1]];
+            }
+            saveCategories();
+        }
+
         function renderSettingsCats() {
             const list = document.getElementById('catSettingsList');
             list.innerHTML = '';
             CATEGORIES.forEach((cat, index) => {
+                const upStyle = index === 0 ? 'opacity:0.2; pointer-events:none;' : '';
+                const downStyle = index === CATEGORIES.length - 1 ? 'opacity:0.2; pointer-events:none;' : '';
+
                 list.innerHTML += `
                 <div class="cat-item-setting" id="cat-row-${index}">
                     <div class="cat-item-setting-content">
@@ -818,15 +833,11 @@
                         <input type="text" class="cat-item-setting-input" id="cat-input-${index}" value="${cat}">
                     </div>
                     <div class="cat-item-actions">
-                        <button class="cat-item-btn edit" id="btn-edit-${index}" onclick="startEditCategory(${index}, '${cat}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button class="cat-item-btn save" id="btn-save-${index}" onclick="saveEditCategory(${index}, '${cat}')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </button>
-                        <button class="cat-item-btn del" onclick="deleteCategory('${cat}')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <button class="cat-item-btn" onclick="moveCategory(${index}, -1)" style="${upStyle}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
+                        <button class="cat-item-btn" onclick="moveCategory(${index}, 1)" style="${downStyle}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                        <button class="cat-item-btn edit" id="btn-edit-${index}" onclick="startEditCategory(${index}, '${cat}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                        <button class="cat-item-btn save" id="btn-save-${index}" onclick="saveEditCategory(${index}, '${cat}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+                        <button class="cat-item-btn del" onclick="deleteCategory('${cat}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>`;
             });
@@ -835,8 +846,7 @@
         window.startEditCategory = (index, oldName) => {
             document.getElementById(`cat-name-${index}`).style.display = 'none';
             const input = document.getElementById(`cat-input-${index}`);
-            input.style.display = 'block';
-            input.focus();
+            input.style.display = 'block'; input.focus();
             document.getElementById(`btn-edit-${index}`).style.display = 'none';
             document.getElementById(`btn-save-${index}`).style.display = 'flex';
         };
@@ -851,11 +861,8 @@
                 const catIndex = CATEGORIES.indexOf(oldName);
                 if (catIndex > -1) CATEGORIES[catIndex] = newName;
                 items.forEach(item => { if (item.cat === oldName) item.cat = newName; });
-                saveApp();
-                saveCategories();
-            } else {
-                renderSettingsCats(); 
-            }
+                saveApp(); saveCategories();
+            } else { renderSettingsCats(); }
         };
 
         document.getElementById('btnAddCat').onclick = () => {
@@ -928,24 +935,19 @@
         };
 
         function openModal(el) { 
-            el.style.display = 'flex'; 
-            el.offsetHeight; 
+            el.style.display = 'flex'; el.offsetHeight; 
             requestAnimationFrame(() => { el.classList.add('active-modal'); }); 
         }
         
         function closeModal(el) { 
-            const activeElement = document.activeElement;
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT' || activeElement.tagName === 'TEXTAREA')) {
-                activeElement.blur();
-            }
+            const act = document.activeElement;
+            if (act && (act.tagName === 'INPUT' || act.tagName === 'SELECT' || act.tagName === 'TEXTAREA')) act.blur();
             el.classList.remove('active-modal'); 
             setTimeout(() => el.style.display = 'none', 300); 
         }
 
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) closeModal(overlay);
-            });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay); });
         });
 
         function initSwipeToClose() {
@@ -956,25 +958,20 @@
 
                 const startDrag = (e) => {
                     startY = e.touches ? e.touches[0].clientY : e.clientY;
-                    isDragging = true;
-                    card.style.transition = 'none';
+                    isDragging = true; card.style.transition = 'none';
                 };
 
                 const drag = (e) => {
                     if (!isDragging) return;
                     currentY = e.touches ? e.touches[0].clientY : e.clientY;
                     let diff = currentY - startY;
-                    if (diff > 0) {
-                        e.preventDefault(); 
-                        card.style.transform = `translateY(${diff}px)`;
-                    }
+                    if (diff > 0) { e.preventDefault(); card.style.transform = `translateY(${diff}px)`; }
                 };
 
                 const endDrag = (e) => {
                     if (!isDragging) return;
                     isDragging = false;
-                    let diff = currentY - startY;
-                    if (diff > 100) {
+                    if (currentY - startY > 100) {
                         closeModal(card.closest('.modal-overlay'));
                         setTimeout(() => card.style.transform = '', 300);
                     } else {
@@ -1010,19 +1007,16 @@
 
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('btnScrollTop');
-            if (window.scrollY > 300) btn.classList.add('visible');
-            else btn.classList.remove('visible');
+            if (window.scrollY > 300) btn.classList.add('visible'); else btn.classList.remove('visible');
         });
-        document.getElementById('btnScrollTop').onclick = () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+        document.getElementById('btnScrollTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
         document.getElementById('themeRow').onclick = (e) => {
             const btn = e.target.closest('.theme-card-btn');
             if (btn) {
                 const theme = btn.dataset.theme;
                 document.documentElement.setAttribute('data-theme', theme);
-                localStorage.setItem('cb_theme', theme);
+                localStorage.setItem('food4f_theme', theme);
                 document.body.classList.add('theme-animated');
             }
         };
