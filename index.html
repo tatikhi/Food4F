@@ -22,7 +22,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Alice&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        :root, [data-theme="sunlit"] {
+        :root {
+            --tg-viewport-height: 100vh;
+        }
+        
+        [data-theme="sunlit"] {
             --bg-main: #FFF5F0; --surface: #FFFFFF; --text-primary: #331B14; --text-secondary: #704C42;
             --accent-main: #E87A5D; --accent-light: #FDE6DD; --border-color: #F7CBBF;
             --shadow-soft: 0 2px 8px rgba(232, 122, 93, 0.08); --icon-inactive: #C7A69C; --ios-blue: #007AFF;
@@ -51,8 +55,9 @@
 
         body {
             background-color: var(--bg-main); color: var(--text-primary);
-            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            min-height: var(--tg-viewport-height); display: flex; flex-direction: column; align-items: center;
             padding: 20px 14px 100px; font-size: 16px; 
+            overscroll-behavior-y: none; /* Запрет системного баунса (пружины) в браузере */
         }
 
         body.theme-animated * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
@@ -94,7 +99,7 @@
         .segmented-btn { position: relative; z-index: 2; flex: 1; padding: 10px 8px; text-align: center; border-radius: 10px; cursor: pointer; color: var(--text-secondary); border: none; background: transparent; font-weight: 600; font-size: 1rem; transition: color 0.25s; }
         .segmented-btn.active { color: var(--text-primary); }
 
-        /* УПРАВЛЕНИЕ СПИСКОМ (Поиск + Сортировка) */
+        /* УПРАВЛЕНИЕ СПИСКОМ */
         .controls-row { display: flex; gap: 8px; margin-bottom: 12px; width: 100%; }
         
         .search-bar-wrapper { position: relative; flex: 1; }
@@ -116,7 +121,7 @@
         .item-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); word-break: break-word; line-height: 1.2; }
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
-        /* ТОЧКИ СТАТУСА НА ПОЛКЕ */
+        /* СТАТУСЫ И КНОПКИ */
         .status-controls { display: flex; gap: 8px; align-items: center; }
         .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; color: transparent; }
         .dot-btn.active { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
@@ -125,7 +130,6 @@
         .dot-orange { background-color: rgb(215, 135, 30); color: rgb(215, 135, 30); }
         .dot-green { background-color: rgb(47, 139, 88); color: rgb(47, 139, 88); }
 
-        /* КНОПКА ГАЛОЧКИ ДЛЯ ПОКУПОК */
         .btn-check-done { 
             background: transparent; border: 2px solid var(--icon-inactive); 
             width: 30px; height: 30px; border-radius: 50%; 
@@ -153,7 +157,7 @@
         
         .btn-add { width: 100%; padding: 14px; border-radius: 12px; border: 1px dashed var(--accent-main); background: var(--accent-light); color: var(--accent-main); font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 16px; }
 
-        /* ИНТЕРФЕЙС НАСТРОЕК & КАТЕГОРИЙ */
+        /* НАСТРОЙКИ КАТЕГОРИЙ */
         .cat-settings-list { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
         .cat-item-setting { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border-color); }
         .cat-item-setting:last-child { border-bottom: none; }
@@ -168,23 +172,30 @@
         .cat-item-btn.del { color: var(--red, #CD3434); }
 
         /* МОДАЛЬНЫЕ ОКНА */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; transition: opacity 0.25s ease; overscroll-behavior: none; }
         .modal-overlay.active-modal { opacity: 1; }
         
-        /* Изменено: Модальное окно теперь на 100% высоты минус 20px, чтобы скроллинг работал правильно с клавиатурой */
-        .modal-card { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; height: calc(100vh - 20px); display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--border-color); border-bottom: none; }
+        /* Жесткая привязка высоты модалки к динамическому вьюпорту Telegram (уменьшается при клавиатуре) */
+        .modal-card { 
+            background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; 
+            height: 100%; max-height: calc(var(--tg-viewport-height) - 10px); 
+            display: flex; flex-direction: column; padding: 0 16px 24px; position: relative; 
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            border: 1px solid var(--border-color); border-bottom: none; 
+            will-change: transform;
+        }
         .modal-overlay.active-modal .modal-card { transform: translateY(0); }
         
-        .modal-drag-handle { width: 100%; padding: 12px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; }
+        .modal-drag-handle { width: 100%; padding: 12px 0; display: flex; justify-content: center; cursor: grab; flex-shrink: 0; touch-action: none; }
         .modal-drag-handle::before { content: ''; width: 38px; height: 5px; background: var(--border-color); border-radius: 3px; }
         
-        .modal-header-nav { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; flex-shrink: 0; }
+        .modal-header-nav { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; flex-shrink: 0; touch-action: none; }
         .modal-nav-btn { background: transparent; border: none; color: var(--accent-main); font-size: 1.05rem; font-weight: 600; cursor: pointer; }
         .modal-nav-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
 
-        .modal-body-scrollable { overflow-y: auto; padding-bottom: 40px; flex: 1; }
+        .modal-body-scrollable { overflow-y: auto; padding-bottom: 60px; flex: 1; }
 
-        /* НАСТРОЙКИ (ТЕМЫ) */
+        /* ТЕМЫ */
         .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
         .theme-card-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 12px; background: var(--bg-main); border: 1px solid var(--border-color); cursor: pointer; }
         .theme-card-btn.active { border-color: var(--accent-main); background: var(--accent-light); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -199,7 +210,6 @@
         .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; }
         .toast.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-        /* Кнопка ВВЕРХ */
         .btn-scroll-top {
             position: fixed; bottom: 24px; right: 20px;
             width: 46px; height: 46px; border-radius: 50%;
@@ -210,16 +220,13 @@
             transform: translateY(20px);
             z-index: 900;
         }
-        .btn-scroll-top.visible {
-            opacity: 1; pointer-events: auto; transform: translateY(0);
-        }
+        .btn-scroll-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
         .btn-scroll-top svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 </head>
 <body>
 
-    <!-- Слушатель для сворачивания клавиатуры при тапе вне строки поиска -->
-    <div id="appContainer" style="width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center;">
+    <div id="appContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
 
         <div class="header-bar">
             <div class="logo">Food4F</div>
@@ -254,7 +261,7 @@
             <div id="contentContainer"></div>
         </div>
 
-    </div> <!-- Конец appContainer -->
+    </div>
 
     <!-- Модальное окно Редактирования/Создания -->
     <div class="modal-overlay" id="formModal">
@@ -339,6 +346,18 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+
+        // Отключаем закрытие Telegram WebApp свайпом вниз
+        if (tg.disableVerticalSwipes) {
+            tg.disableVerticalSwipes();
+        }
+
+        // Обновляем высоту --tg-viewport-height для корректного отображения клавиатуры
+        function updateViewportHeight() {
+            document.documentElement.style.setProperty('--tg-viewport-height', tg.viewportHeight + 'px');
+        }
+        tg.onEvent('viewportChanged', updateViewportHeight);
+        updateViewportHeight();
 
         let CATEGORIES = [];
         
@@ -435,6 +454,7 @@
             populateCatSelect();
             renderSettingsCats();
             render();
+            initSwipeToClose();
 
             if (tg.CloudStorage) {
                 const cloudItems = await loadFromCloudChunked('cloud_items_v4');
@@ -462,20 +482,15 @@
             });
         }
 
-        // ОБНОВЛЕННЫЙ УМНЫЙ ПОИСК: Ищет строго по началу слова
-        function isMatchSearch(text, queryStr) {
-            if (!text || !queryStr) return false;
+        // ТОЧНЫЙ ПОИСК: Ищет только совпадения с началом слов в ОСНОВНОМ НАЗВАНИИ (игнорирует заметки)
+        function isMatchSearch(item, queryStr) {
+            if (!queryStr) return true;
             
-            const textWords = text.toLowerCase().split(/[\s\-.,()]+/);
+            // Разбиваем ТОЛЬКО название (name) товара на слова
+            const textWords = item.name.toLowerCase().split(/[\s\-.,()]+/);
             const queryWords = queryStr.toLowerCase().split(/\s+/).filter(w => w.length > 0);
             
-            // Если запрос состоит из одного слова — проверяем, начинается ли хоть одно слово из текста с этого запроса
-            if (queryWords.length === 1) {
-                const q = queryWords[0];
-                return textWords.some(tw => tw.startsWith(q));
-            }
-
-            // Если слов в запросе несколько — все они должны совпадать с началом каких-то слов в тексте
+            // Каждое слово из поискового запроса должно совпадать с началом какого-либо слова в названии товара
             return queryWords.every(qw => textWords.some(tw => tw.startsWith(qw)));
         }
 
@@ -500,17 +515,18 @@
             renderShelves(document.getElementById('contentContainer'));
         });
 
-        // Сворачивание клавиатуры при клике вне поля поиска
+        // Сворачивание клавиатуры при тапе вне строки поиска
         document.getElementById('appContainer').addEventListener('click', (e) => {
-            if (e.target.id !== 'searchInput' && document.activeElement === document.getElementById('searchInput')) {
-                document.getElementById('searchInput').blur();
+            const searchInput = document.getElementById('searchInput');
+            if (e.target !== searchInput && document.activeElement === searchInput) {
+                searchInput.blur();
             }
         });
 
         function renderShelves(container) {
             container.innerHTML = ''; 
             let filteredItems = searchQuery 
-                ? items.filter(i => isMatchSearch(i.name, searchQuery) || isMatchSearch(i.note, searchQuery))
+                ? items.filter(i => isMatchSearch(i, searchQuery)) // Передаем только объект товара (заметки больше не проверяются)
                 : [...items];
 
             if (filteredItems.length === 0) {
@@ -662,19 +678,13 @@
             if (newName !== oldName && CATEGORIES.includes(newName)) return showToast("Такая категория уже есть");
             
             if (newName !== oldName) {
-                // Обновляем название в массиве категорий
                 const catIndex = CATEGORIES.indexOf(oldName);
                 if (catIndex > -1) CATEGORIES[catIndex] = newName;
-                
-                // Обновляем название во всех товарах, где была эта категория
-                items.forEach(item => {
-                    if (item.cat === oldName) item.cat = newName;
-                });
-                
+                items.forEach(item => { if (item.cat === oldName) item.cat = newName; });
                 saveApp();
                 saveCategories();
             } else {
-                renderSettingsCats(); // просто возвращаем обратно вид, если ничего не изменилось
+                renderSettingsCats(); 
             }
         };
 
@@ -693,7 +703,7 @@
             saveCategories();
         };
 
-        // --- ФОРМА ---
+        // --- ФОРМА И МОДАЛКИ ---
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
             if (id) {
@@ -764,7 +774,6 @@
             let card = el.querySelector('.modal-card');
             if (card) card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
             
-            // Если закрываем модалку настроек - убираем фокус с инпута редактирования категорий
             if(el.id === 'settingsModal') {
                 const activeElement = document.activeElement;
                 if (activeElement && activeElement.tagName === 'INPUT') activeElement.blur();
@@ -779,6 +788,63 @@
                 if (e.target === overlay) closeModal(overlay);
             });
         });
+
+        // Скроллим инпуты в зону видимости, если они открылись под клавиатурой
+        document.querySelectorAll('#formModal input, #formModal select').forEach(input => {
+            input.addEventListener('focus', function() {
+                setTimeout(() => {
+                    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+
+        // КАСТОМНЫЙ ЖЕСТ: Закрытие модального окна смахиванием (шторка вниз)
+        function initSwipeToClose() {
+            document.querySelectorAll('.modal-card').forEach(card => {
+                const handle = card.querySelector('.modal-drag-handle');
+                const header = card.querySelector('.modal-header-nav');
+                let startY = 0, currentY = 0, isDragging = false;
+
+                const startDrag = (e) => {
+                    startY = e.touches ? e.touches[0].clientY : e.clientY;
+                    isDragging = true;
+                    card.style.transition = 'none';
+                };
+
+                const drag = (e) => {
+                    if (!isDragging) return;
+                    currentY = e.touches ? e.touches[0].clientY : e.clientY;
+                    let diff = currentY - startY;
+                    if (diff > 0) {
+                        e.preventDefault(); // Предотвращаем скролл самого приложения
+                        card.style.transform = `translateY(${diff}px)`;
+                    }
+                };
+
+                const endDrag = (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    let diff = currentY - startY;
+                    if (diff > 100) {
+                        // Если протянули достаточно сильно - закрываем
+                        closeModal(card.closest('.modal-overlay'));
+                        setTimeout(() => card.style.transform = '', 300);
+                    } else {
+                        // Иначе возвращаем окно на место
+                        card.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                        card.style.transform = 'translateY(0)';
+                    }
+                };
+
+                [handle, header].forEach(el => {
+                    if(el) {
+                        el.addEventListener('touchstart', startDrag, {passive: true});
+                        el.addEventListener('touchmove', drag, {passive: false});
+                        el.addEventListener('touchend', endDrag);
+                    }
+                });
+            });
+        }
 
         // --- Вкладки (Switch) ---
         document.getElementById('btnTabShelves').onclick = () => {
