@@ -272,7 +272,7 @@
         .form-group { margin-bottom: 14px; }
         .form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
 
-        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: var(--surface); border: 1px solid var(--accent-main); color: var(--text-primary); padding: 14px 20px; border-radius: 16px; font-weight: 600; opacity: 0; pointer-events: none; transition: 0.25s ease; z-index: 10000; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,0.16); }
         .toast.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
         .btn-scroll-top {
@@ -478,6 +478,8 @@
         ].map((p, i) => ({ id: i+1, name: p.n, cat: p.cat, note: p.note || '', status: 'ok', store: 'none' }));
 
         const DEFAULT_CATS = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"];
+        const STATUS_LIST = ['ok', 'soon', 'empty'];
+        const STORE_LIST = ['none', 'ozon', 'lavka'];
 
         let items = [];
         let hasRealUserData = false;
@@ -513,7 +515,7 @@
             set(key, val) {
                 return new Promise(resolve => {
                     if (!this.isAvailable()) return resolve(false);
-                    const timer = setTimeout(() => resolve(false), 4000);
+                    const timer = setTimeout(() => resolve(false), 5000);
                     try {
                         tg.CloudStorage.setItem(key, val, (err) => {
                             clearTimeout(timer);
@@ -525,19 +527,52 @@
                     }
                 });
             },
+            async setWithRetry(key, val, retries = 3) {
+                for (let attempt = 1; attempt <= retries; attempt++) {
+                    const ok = await this.set(key, val);
+                    if (ok) return true;
+                    if (attempt < retries) {
+                        await new Promise(r => setTimeout(r, 200 * attempt));
+                    }
+                }
+                return false;
+            },
             get(key) {
                 return new Promise(resolve => {
                     if (!this.isAvailable()) return resolve(null);
-                    const timer = setTimeout(() => resolve(null), 4000);
+                    const timer = setTimeout(() => resolve(null), 5000);
                     try {
                         tg.CloudStorage.getItem(key, (err, val) => {
                             clearTimeout(timer);
-                            resolve(!err && val ? val : null);
+                            resolve(!err && val !== undefined && val !== '' ? val : null);
                         });
                     } catch(e) {
                         clearTimeout(timer);
                         resolve(null);
                     }
+                });
+            },
+            getMany(keys) {
+                return new Promise(async resolve => {
+                    if (!this.isAvailable() || !keys.length) return resolve({});
+                    if (typeof tg.CloudStorage.getItems === 'function') {
+                        const timer = setTimeout(() => resolve(null), 5000);
+                        try {
+                            tg.CloudStorage.getItems(keys, (err, vals) => {
+                                clearTimeout(timer);
+                                if (!err && vals && typeof vals === 'object') return resolve(vals);
+                                resolve(null);
+                            });
+                            return;
+                        } catch(e) {
+                            clearTimeout(timer);
+                        }
+                    }
+                    const out = {};
+                    for (const k of keys) {
+                        out[k] = await this.get(k);
+                    }
+                    resolve(out);
                 });
             },
             remove(key) {
@@ -552,7 +587,7 @@
             getKeys() {
                 return new Promise(resolve => {
                     if (!this.isAvailable() || typeof tg.CloudStorage.getKeys !== 'function') return resolve([]);
-                    const timer = setTimeout(() => resolve([]), 4000);
+                    const timer = setTimeout(() => resolve([]), 5000);
                     try {
                         tg.CloudStorage.getKeys((err, keys) => {
                             clearTimeout(timer);
@@ -565,6 +600,41 @@
                 });
             }
         };
+
+        function packItemsForCloud(list, cats) {
+            return list.map(it => {
+                const catIdx = cats.indexOf(it.cat);
+                const stIdx = STATUS_LIST.indexOf(it.status || 'ok');
+                const srIdx = STORE_LIST.indexOf(it.store || 'none');
+                return [
+                    it.id,
+                    it.name,
+                    catIdx >= 0 ? catIdx : it.cat,
+                    it.note || '',
+                    stIdx >= 0 ? stIdx : 0,
+                    srIdx >= 0 ? srIdx : 0
+                ];
+            });
+        }
+
+        function unpackItemsFromCloud(rawList, cats) {
+            if (!Array.isArray(rawList)) return null;
+            if (rawList.length === 0) return [];
+            if (Array.isArray(rawList[0])) {
+                return rawList.map((row, idx) => ({
+                    id: row[0] || (Date.now() + idx),
+                    name: String(row[1] || ''),
+                    cat: typeof row[2] === 'number' ? (cats[row[2]] || cats[0] || DEFAULT_CATS[0]) : (row[2] || cats[0] || DEFAULT_CATS[0]),
+                    note: row[3] || '',
+                    status: typeof row[4] === 'number' ? (STATUS_LIST[row[4]] || 'ok') : (row[4] || 'ok'),
+                    store: typeof row[5] === 'number' ? (STORE_LIST[row[5]] || 'none') : (row[5] || 'none')
+                })).filter(it => it.name);
+            }
+            if (typeof rawList[0] === 'object' && rawList[0] !== null && typeof rawList[0].name === 'string') {
+                return rawList;
+            }
+            return null;
+        }
 
         function isDefaultInitialList(list) {
             if (!Array.isArray(list) || list.length === 0) return true;
@@ -589,28 +659,34 @@
             try { return JSON.parse(raw); } catch(e) { return null; }
         }
 
-        // Параллельная запись чанков в Telegram CloudStorage (~200 мс вместо нескольких секунд)
+        // Атомарная запись в Telegram CloudStorage с повторами (до 110 товаров укладываются в 1 ключ)
         async function saveToCloudChunked(key, dataObj, updatedAtStr = null) {
             if (!tgCloud.isAvailable()) return false;
             const jsonStr = JSON.stringify(dataObj);
-            const chunks = jsonStr.match(/.{1,1800}/g) || [];
+            const chunks = jsonStr.match(/.{1,3200}/g) || ['[]'];
             const prevCount = parseInt((await tgCloud.get(key + '_count')) || '0', 10);
 
-            const writeTasks = chunks.map((chunk, i) => tgCloud.set(key + '_' + i, chunk));
-            writeTasks.push(tgCloud.set(key + '_count', chunks.length.toString()));
-            if (updatedAtStr) {
-                writeTasks.push(tgCloud.set('cloud_homyak_updated_at', updatedAtStr));
+            for (let i = 0; i < chunks.length; i += 2) {
+                const batch = [tgCloud.setWithRetry(key + '_' + i, chunks[i])];
+                if (i + 1 < chunks.length) {
+                    batch.push(tgCloud.setWithRetry(key + '_' + (i + 1), chunks[i + 1]));
+                }
+                const res = await Promise.all(batch);
+                if (res.some(ok => !ok)) return false;
             }
 
-            const results = await Promise.all(writeTasks);
-            if (results.some(ok => !ok)) return false;
+            // Фиксируем метаданные ТОЛЬКО после того, как все чанки успешно записаны
+            const metaTasks = [tgCloud.setWithRetry(key + '_count', chunks.length.toString())];
+            if (updatedAtStr) {
+                metaTasks.push(tgCloud.setWithRetry('cloud_homyak_updated_at', updatedAtStr));
+            }
+            const metaRes = await Promise.all(metaTasks);
+            if (metaRes.some(ok => !ok)) return false;
 
             if (prevCount > chunks.length) {
-                const cleanupTasks = [];
                 for (let j = chunks.length; j < prevCount; j++) {
-                    cleanupTasks.push(tgCloud.remove(key + '_' + j));
+                    await tgCloud.remove(key + '_' + j);
                 }
-                await Promise.all(cleanupTasks);
             }
             return true;
         }
@@ -621,16 +697,58 @@
             const count = parseInt(countStr, 10);
             if (!count || count <= 0) return null;
 
-            const chunkTasks = [];
-            for (let i = 0; i < count; i++) {
-                chunkTasks.push(tgCloud.get(key + '_' + i));
+            const keys = [];
+            for (let i = 0; i < count; i++) keys.push(key + '_' + i);
+
+            let map = await tgCloud.getMany(keys);
+            if (!map) {
+                map = {};
+                for (const k of keys) map[k] = await tgCloud.get(k);
             }
-            const parts = await Promise.all(chunkTasks);
-            if (parts.some(p => !p)) return null;
-            return parseJsonSafe(parts.join(''));
+
+            let fullStr = '';
+            for (const k of keys) {
+                if (!map[k]) return null;
+                fullStr += map[k];
+            }
+            return parseJsonSafe(fullStr);
         }
 
-        let saveChain = Promise.resolve();
+        // Очередь сохранения без наложения: всегда отправляет самое актуальное состояние
+        let isSavingCloud = false;
+        let pendingCloudSave = false;
+        let pendingNotify = false;
+
+        async function processCloudSaveQueue() {
+            if (isSavingCloud) return;
+            isSavingCloud = true;
+            while (pendingCloudSave) {
+                pendingCloudSave = false;
+                const notify = pendingNotify;
+                pendingNotify = false;
+
+                const snapshotItems = JSON.parse(JSON.stringify(items));
+                const snapshotCats = [...CATEGORIES];
+                const stamp = safeStorage.get(STORE_KEYS.updatedAt) || Date.now().toString();
+
+                if (tgCloud.isAvailable()) {
+                    const packed = packItemsForCloud(snapshotItems, snapshotCats);
+                    const okItems = await saveToCloudChunked('cloud_homyak_items_v6', packed, stamp);
+                    const okCats = await saveToCloudChunked('cloud_homyak_cats_v2', snapshotCats, null);
+                    if (okItems && okCats) {
+                        cloudSyncState.cloudCount = snapshotItems.length;
+                        cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                        updateSyncStatusUI();
+                        if (notify) showToast("✓ Сохранено в облако");
+                    } else {
+                        updateSyncStatusUI();
+                        if (notify) showToast("⚠️ Ошибка сохранения в облако ТГ");
+                    }
+                }
+            }
+            isSavingCloud = false;
+        }
+
         function flushLocalSnapshot() {
             if (!hasRealUserData) return;
             const serialized = JSON.stringify(items);
@@ -650,35 +768,28 @@
                 safeStorage.set(STORE_KEYS.backup, serialized);
             }
 
-            const snapshotItems = JSON.parse(serialized);
-            saveChain = saveChain.then(async () => {
-                if (tgCloud.isAvailable()) {
-                    const ok = await saveToCloudChunked('cloud_homyak_items_v5', snapshotItems, nowStr);
-                    if (ok) {
-                        cloudSyncState.cloudCount = snapshotItems.length;
-                        cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                        updateSyncStatusUI();
-                        if (notifyCloud) showToast("Сохранено в облако");
-                    }
-                }
-            });
+            pendingCloudSave = true;
+            if (notifyCloud) pendingNotify = true;
+            processCloudSaveQueue();
         }
 
         function saveCategories() {
             const snapshotCats = [...CATEGORIES];
             safeStorage.set(STORE_KEYS.cats, JSON.stringify(snapshotCats));
-            saveChain = saveChain.then(async () => {
-                if (tgCloud.isAvailable()) {
-                    await saveToCloudChunked('cloud_homyak_cats_v2', snapshotCats);
-                }
-            });
+            pendingCloudSave = true;
+            processCloudSaveQueue();
             populateCatSelect();
             renderSettingsCats();
             render();
         }
 
         function normalizeItems(list) {
-            list.forEach(i => {
+            const seenIds = new Set();
+            list.forEach((i, idx) => {
+                if (!i.id || seenIds.has(String(i.id))) {
+                    i.id = Date.now() + idx + 1;
+                }
+                seenIds.add(String(i.id));
                 if (i.store === 'market') i.store = 'lavka';
                 if (i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none';
                 if (!i.status) i.status = 'ok';
@@ -709,7 +820,7 @@
             }
         }
 
-        // Полное сканирование хранилищ с учётом времени обновления (updatedAt)
+        // Полное сканирование локальных и облачных хранилищ с приоритетом свежести (updatedAt)
         async function scanAndRecoverStorages() {
             const itemCandidates = [];
             const catCandidates = [];
@@ -739,32 +850,13 @@
                 ]);
                 cloudUpdatedAt = parseInt(cloudTimeStr || '0', 10);
 
-                const prefixes = new Set(['cloud_homyak_items_v5', 'cloud_items_v4']);
+                // 1. Сначала загружаем категории, чтобы корректно распаковать компактный формат v6
                 const catPrefixes = new Set(['cloud_homyak_cats_v2', 'cloud_cats_v1']);
-
                 allCloudKeys.forEach(k => {
-                    if (k.endsWith('_count')) {
-                        const base = k.slice(0, -6);
-                        if (base.includes('cat')) catPrefixes.add(base);
-                        else prefixes.add(base);
+                    if (k.endsWith('_count') && k.includes('cat')) {
+                        catPrefixes.add(k.slice(0, -6));
                     }
                 });
-
-                for (const p of prefixes) {
-                    const loaded = await loadFromCloudChunked(p);
-                    if (isValidItemArray(loaded)) {
-                        itemCandidates.push({
-                            source: 'cloud:' + p,
-                            isLocal: false,
-                            updatedAt: p === 'cloud_homyak_items_v5' ? cloudUpdatedAt : 0,
-                            list: loaded
-                        });
-                        if (p === 'cloud_homyak_items_v5') {
-                            cloudSyncState.cloudCount = loaded.length;
-                        }
-                    }
-                }
-
                 for (const cp of catPrefixes) {
                     const loadedCat = await loadFromCloudChunked(cp);
                     if (isValidCatArray(loadedCat)) {
@@ -773,12 +865,63 @@
                 }
             }
 
+            let bestCats = null;
+            if (catCandidates.length > 0) {
+                catCandidates.sort((a, b) => b.list.length - a.list.length);
+                bestCats = catCandidates[0].list;
+            }
+            const activeCats = bestCats && bestCats.length > 0 ? bestCats : CATEGORIES;
+
+            if (tgCloud.isAvailable()) {
+                const allCloudKeys = await tgCloud.getKeys();
+                const prefixes = new Set(['cloud_homyak_items_v6', 'cloud_homyak_items_v5', 'cloud_items_v4']);
+                allCloudKeys.forEach(k => {
+                    if (k.endsWith('_count')) {
+                        const base = k.slice(0, -6);
+                        if (!base.includes('cat')) prefixes.add(base);
+                    }
+                });
+
+                let hasV6 = false;
+                for (const p of prefixes) {
+                    const rawLoaded = await loadFromCloudChunked(p);
+                    const unpacked = unpackItemsFromCloud(rawLoaded, activeCats);
+                    if (isValidItemArray(unpacked)) {
+                        if (p === 'cloud_homyak_items_v6') {
+                            hasV6 = true;
+                            cloudSyncState.cloudCount = unpacked.length;
+                        }
+                        itemCandidates.push({
+                            source: 'cloud:' + p,
+                            isLocal: false,
+                            isV6: p === 'cloud_homyak_items_v6',
+                            updatedAt: (p === 'cloud_homyak_items_v6' || p === 'cloud_homyak_items_v5') ? cloudUpdatedAt : 0,
+                            list: unpacked
+                        });
+                        if (!hasV6 && p === 'cloud_homyak_items_v5') {
+                            cloudSyncState.cloudCount = unpacked.length;
+                        }
+                    }
+                }
+
+                // Если v6 уже существует в облаке, отбрасываем устаревшие архивы v5/v4 с тем же или меньшим временем,
+                // чтобы удалённые товары никогда не воскресали из старых версий ключей
+                if (hasV6) {
+                    for (let i = itemCandidates.length - 1; i >= 0; i--) {
+                        const c = itemCandidates[i];
+                        if (!c.isLocal && !c.isV6) {
+                            itemCandidates.splice(i, 1);
+                        }
+                    }
+                }
+            }
+
             const realCandidates = itemCandidates.filter(c => !isDefaultInitialList(c.list));
-            // Если время редактирования отличается, приоритет у более свежей версии; иначе — у более полного списка
             realCandidates.sort((a, b) => {
-                if (a.updatedAt && b.updatedAt && a.updatedAt !== b.updatedAt) {
+                if (a.updatedAt !== b.updatedAt) {
                     return b.updatedAt - a.updatedAt;
                 }
+                if (a.isV6 !== b.isV6) return a.isV6 ? -1 : 1;
                 return b.list.length - a.list.length;
             });
 
@@ -789,15 +932,10 @@
                 bestCandidate = itemCandidates[0];
             }
 
-            let bestCats = null;
-            if (catCandidates.length > 0) {
-                catCandidates.sort((a, b) => b.list.length - a.list.length);
-                bestCats = catCandidates[0].list;
-            }
-
             return {
                 bestItems: bestCandidate ? bestCandidate.list : null,
                 bestFromLocal: bestCandidate ? bestCandidate.isLocal : false,
+                bestIsV6: bestCandidate ? Boolean(bestCandidate.isV6) : false,
                 localUpdatedAt,
                 cloudUpdatedAt,
                 bestCats
@@ -863,7 +1001,7 @@
             initSwipeToClose();
             updateSyncStatusUI();
 
-            const { bestItems, bestFromLocal, localUpdatedAt, cloudUpdatedAt, bestCats } = await scanAndRecoverStorages();
+            const { bestItems, bestFromLocal, bestIsV6, localUpdatedAt, cloudUpdatedAt, bestCats } = await scanAndRecoverStorages();
             if (bestCats && bestCats.length > 0) {
                 CATEGORIES = Array.from(new Set([...bestCats, ...CATEGORIES]));
                 safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
@@ -875,12 +1013,14 @@
                 safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
                 safeStorage.set(STORE_KEYS.backup, JSON.stringify(items));
 
-                // Если локальная копия новее облачной (предыдущая отправка прервалась при закрытии) или в облаке пусто — догружаем в облако
-                if (tgCloud.isAvailable() && (cloudSyncState.cloudCount === 0 || (bestFromLocal && localUpdatedAt > cloudUpdatedAt))) {
+                // Если в облаке ещё нет v6 или локальная копия новее облачной — синхронизируем в v6
+                if (tgCloud.isAvailable() && (!bestIsV6 || (bestFromLocal && localUpdatedAt > cloudUpdatedAt))) {
                     const syncStamp = (localUpdatedAt || Date.now()).toString();
-                    await saveToCloudChunked('cloud_homyak_items_v5', items, syncStamp);
-                    await saveToCloudChunked('cloud_homyak_cats_v2', CATEGORIES);
-                    cloudSyncState.cloudCount = items.length;
+                    safeStorage.set(STORE_KEYS.updatedAt, syncStamp);
+                    const packed = packItemsForCloud(items, CATEGORIES);
+                    const ok = await saveToCloudChunked('cloud_homyak_items_v6', packed, syncStamp);
+                    await saveToCloudChunked('cloud_homyak_cats_v2', CATEGORIES, null);
+                    if (ok) cloudSyncState.cloudCount = items.length;
                 }
                 cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             }
@@ -954,16 +1094,14 @@
                         store: it.store || 'none'
                     }));
                 } else if (Array.isArray(data) && data.length === 2) {
-                    const STATUS_MAP = ['ok', 'soon', 'empty'];
-                    const STORE_MAP = ['none', 'ozon', 'lavka'];
                     CATEGORIES = data[0];
                     items = data[1].map(it => ({
                         id: it[0],
                         name: it[1],
                         cat: CATEGORIES[it[2]] || CATEGORIES[0],
                         note: it[3],
-                        status: STATUS_MAP[it[4]] || it[4] || 'ok',
-                        store: STORE_MAP[it[5]] || it[5] || 'none'
+                        status: STATUS_LIST[it[4]] || it[4] || 'ok',
+                        store: STORE_LIST[it[5]] || it[5] || 'none'
                     }));
                 } else {
                     return showToast("Неверный формат кода.");
@@ -1157,7 +1295,7 @@
         }
 
         function setStatus(id, newStatus) {
-            const item = items.find(i => i.id === id);
+            const item = items.find(i => String(i.id) === String(id));
             if (item) { item.status = newStatus; saveApp(); render(); }
         }
 
@@ -1192,15 +1330,15 @@
                     <div class="cat-item-actions">
                         <button class="cat-item-btn" onclick="moveCategory(${index}, -1)" style="${upStyle}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>
                         <button class="cat-item-btn" onclick="moveCategory(${index}, 1)" style="${downStyle}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-                        <button class="cat-item-btn edit" id="btn-edit-${index}" onclick="startEditCategory(${index}, '${cat}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                        <button class="cat-item-btn save" id="btn-save-${index}" onclick="saveEditCategory(${index}, '${cat}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
-                        <button class="cat-item-btn del" onclick="deleteCategory('${cat}')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        <button class="cat-item-btn edit" id="btn-edit-${index}" onclick="startEditCategory(${index})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                        <button class="cat-item-btn save" id="btn-save-${index}" onclick="saveEditCategory(${index})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+                        <button class="cat-item-btn del" onclick="deleteCategoryByIndex(${index})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>`;
             });
         }
 
-        window.startEditCategory = (index, oldName) => {
+        window.startEditCategory = (index) => {
             document.getElementById(`cat-name-${index}`).style.display = 'none';
             const input = document.getElementById(`cat-input-${index}`);
             input.style.display = 'block'; input.focus();
@@ -1208,15 +1346,15 @@
             document.getElementById(`btn-save-${index}`).style.display = 'flex';
         };
 
-        window.saveEditCategory = (index, oldName) => {
+        window.saveEditCategory = (index) => {
+            const oldName = CATEGORIES[index];
             const input = document.getElementById(`cat-input-${index}`);
             const newName = input.value.trim();
             if (!newName) return showToast("Название не может быть пустым");
             if (newName !== oldName && CATEGORIES.includes(newName)) return showToast("Такая категория уже есть");
             
             if (newName !== oldName) {
-                const catIndex = CATEGORIES.indexOf(oldName);
-                if (catIndex > -1) CATEGORIES[catIndex] = newName;
+                CATEGORIES[index] = newName;
                 items.forEach(item => { if (item.cat === oldName) item.cat = newName; });
                 saveApp(true); saveCategories();
             } else { renderSettingsCats(); }
@@ -1231,16 +1369,17 @@
             saveCategories();
         };
 
-        window.deleteCategory = (catName) => {
+        window.deleteCategoryByIndex = (index) => {
             if (CATEGORIES.length <= 1) return showToast("Нельзя удалить последнюю!");
-            CATEGORIES = CATEGORIES.filter(c => c !== catName);
+            CATEGORIES.splice(index, 1);
             saveCategories();
         };
 
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
-            if (id) {
-                const item = items.find(i => i.id == id);
+            if (id !== null && id !== undefined) {
+                const item = items.find(i => String(i.id) === String(id));
+                if (!item) return;
                 document.getElementById('formTitle').innerText = "Редактировать";
                 document.getElementById('editId').value = item.id;
                 document.getElementById('inpName').value = item.name;
@@ -1277,7 +1416,7 @@
             if (!name) return showToast("Введите название");
 
             if (id) {
-                const item = items.find(i => i.id == id);
+                const item = items.find(i => String(i.id) === String(id));
                 if (item) {
                     item.name = name; item.cat = cat; item.note = note; item.store = store;
                 }
@@ -1289,7 +1428,7 @@
 
         document.getElementById('btnDeleteForm').onclick = () => {
             const id = document.getElementById('editId').value;
-            items = items.filter(i => i.id != id);
+            items = items.filter(i => String(i.id) !== String(id));
             saveApp(true); render(); closeModal(document.getElementById('formModal'));
         };
 
