@@ -467,7 +467,7 @@
 
         const STORES = {
             'ozon': { label: 'Ozon Fresh', url: 'https://www.ozon.ru/category/supermarket-25000/?text=' },
-            'lavka': { label: 'Я.Маркет', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?text=' }
+            'lavka': { label: 'Я.Маркет', url: 'https://market.yandex.ru/business--yandex-lavka/163880634?generalContext=t%3DshopInShop%3Bi%3D1%3Bbi%3D163880634%3B&searchContext=sins_ctx&text=' }
         };
 
         const initialProducts = [
@@ -589,23 +589,28 @@
             try { return JSON.parse(raw); } catch(e) { return null; }
         }
 
-        // Безопасное разбиение на чанки по 1800 символов (< 3600 байт UTF-8, строго в лимите 4096 байт Telegram)
-        async function saveToCloudChunked(key, dataObj) {
+        // Параллельная запись чанков в Telegram CloudStorage (~200 мс вместо нескольких секунд)
+        async function saveToCloudChunked(key, dataObj, updatedAtStr = null) {
             if (!tgCloud.isAvailable()) return false;
             const jsonStr = JSON.stringify(dataObj);
             const chunks = jsonStr.match(/.{1,1800}/g) || [];
             const prevCount = parseInt((await tgCloud.get(key + '_count')) || '0', 10);
 
-            for (let i = 0; i < chunks.length; i++) {
-                const ok = await tgCloud.set(key + '_' + i, chunks[i]);
-                if (!ok) return false;
+            const writeTasks = chunks.map((chunk, i) => tgCloud.set(key + '_' + i, chunk));
+            writeTasks.push(tgCloud.set(key + '_count', chunks.length.toString()));
+            if (updatedAtStr) {
+                writeTasks.push(tgCloud.set('cloud_homyak_updated_at', updatedAtStr));
             }
-            const countOk = await tgCloud.set(key + '_count', chunks.length.toString());
-            if (!countOk) return false;
 
-            // Удаляем лишние старые чанки, если список стал короче
-            for (let j = chunks.length; j < prevCount; j++) {
-                await tgCloud.remove(key + '_' + j);
+            const results = await Promise.all(writeTasks);
+            if (results.some(ok => !ok)) return false;
+
+            if (prevCount > chunks.length) {
+                const cleanupTasks = [];
+                for (let j = chunks.length; j < prevCount; j++) {
+                    cleanupTasks.push(tgCloud.remove(key + '_' + j));
+                }
+                await Promise.all(cleanupTasks);
             }
             return true;
         }
@@ -615,23 +620,32 @@
             if (!countStr) return null;
             const count = parseInt(countStr, 10);
             if (!count || count <= 0) return null;
-            let fullStr = '';
+
+            const chunkTasks = [];
             for (let i = 0; i < count; i++) {
-                const chunk = await tgCloud.get(key + '_' + i);
-                if (!chunk) return null;
-                fullStr += chunk;
+                chunkTasks.push(tgCloud.get(key + '_' + i));
             }
-            return parseJsonSafe(fullStr);
+            const parts = await Promise.all(chunkTasks);
+            if (parts.some(p => !p)) return null;
+            return parseJsonSafe(parts.join(''));
         }
 
-        // Очередь сохранения (Mutex), чтобы быстрые нажатия не перемешивали чанки
         let saveChain = Promise.resolve();
-        function saveApp() {
-            hasRealUserData = true;
-            const now = Date.now();
+        function flushLocalSnapshot() {
+            if (!hasRealUserData) return;
             const serialized = JSON.stringify(items);
             safeStorage.set(STORE_KEYS.items, serialized);
-            safeStorage.set(STORE_KEYS.updatedAt, now.toString());
+            if (!isDefaultInitialList(items)) {
+                safeStorage.set(STORE_KEYS.backup, serialized);
+            }
+        }
+
+        function saveApp(notifyCloud = false) {
+            hasRealUserData = true;
+            const nowStr = Date.now().toString();
+            const serialized = JSON.stringify(items);
+            safeStorage.set(STORE_KEYS.items, serialized);
+            safeStorage.set(STORE_KEYS.updatedAt, nowStr);
             if (!isDefaultInitialList(items)) {
                 safeStorage.set(STORE_KEYS.backup, serialized);
             }
@@ -639,12 +653,12 @@
             const snapshotItems = JSON.parse(serialized);
             saveChain = saveChain.then(async () => {
                 if (tgCloud.isAvailable()) {
-                    const ok = await saveToCloudChunked('cloud_homyak_items_v5', snapshotItems);
-                    await tgCloud.set('cloud_homyak_updated_at', now.toString());
+                    const ok = await saveToCloudChunked('cloud_homyak_items_v5', snapshotItems, nowStr);
                     if (ok) {
                         cloudSyncState.cloudCount = snapshotItems.length;
                         cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                         updateSyncStatusUI();
+                        if (notifyCloud) showToast("Сохранено в облако");
                     }
                 }
             });
@@ -695,23 +709,36 @@
             }
         }
 
-        // Полное сканирование всех ключей в localStorage и Telegram CloudStorage
+        // Полное сканирование хранилищ с учётом времени обновления (updatedAt)
         async function scanAndRecoverStorages() {
             const itemCandidates = [];
             const catCandidates = [];
+            const localUpdatedAt = parseInt(safeStorage.get(STORE_KEYS.updatedAt) || '0', 10);
+            let cloudUpdatedAt = 0;
 
-            // 1. Сканируем все ключи localStorage
             const lKeys = safeStorage.keys();
             lKeys.forEach(k => {
                 const parsed = parseJsonSafe(safeStorage.get(k));
-                if (isValidItemArray(parsed)) itemCandidates.push({ source: 'local:' + k, list: parsed });
-                else if (isValidCatArray(parsed) && k.includes('cat')) catCandidates.push({ source: 'local:' + k, list: parsed });
+                if (isValidItemArray(parsed)) {
+                    itemCandidates.push({
+                        source: 'local:' + k,
+                        isLocal: true,
+                        updatedAt: localUpdatedAt,
+                        list: parsed
+                    });
+                } else if (isValidCatArray(parsed) && k.includes('cat')) {
+                    catCandidates.push({ source: 'local:' + k, list: parsed });
+                }
             });
 
-            // 2. Сканируем Telegram CloudStorage (все ключи через getKeys + известные префиксы)
             if (tgCloud.isAvailable()) {
                 cloudSyncState.supported = true;
-                const allCloudKeys = await tgCloud.getKeys();
+                const [allCloudKeys, cloudTimeStr] = await Promise.all([
+                    tgCloud.getKeys(),
+                    tgCloud.get('cloud_homyak_updated_at')
+                ]);
+                cloudUpdatedAt = parseInt(cloudTimeStr || '0', 10);
+
                 const prefixes = new Set(['cloud_homyak_items_v5', 'cloud_items_v4']);
                 const catPrefixes = new Set(['cloud_homyak_cats_v2', 'cloud_cats_v1']);
 
@@ -726,7 +753,12 @@
                 for (const p of prefixes) {
                     const loaded = await loadFromCloudChunked(p);
                     if (isValidItemArray(loaded)) {
-                        itemCandidates.push({ source: 'cloud:' + p, list: loaded });
+                        itemCandidates.push({
+                            source: 'cloud:' + p,
+                            isLocal: false,
+                            updatedAt: p === 'cloud_homyak_items_v5' ? cloudUpdatedAt : 0,
+                            list: loaded
+                        });
                         if (p === 'cloud_homyak_items_v5') {
                             cloudSyncState.cloudCount = loaded.length;
                         }
@@ -741,16 +773,20 @@
                 }
             }
 
-            // Выбираем лучший список: приоритет у реальных пользовательских данных (не шаблон из 14 товаров)
             const realCandidates = itemCandidates.filter(c => !isDefaultInitialList(c.list));
-            // Сортируем по количеству товаров (берем самый полный)
-            realCandidates.sort((a, b) => b.list.length - a.list.length);
+            // Если время редактирования отличается, приоритет у более свежей версии; иначе — у более полного списка
+            realCandidates.sort((a, b) => {
+                if (a.updatedAt && b.updatedAt && a.updatedAt !== b.updatedAt) {
+                    return b.updatedAt - a.updatedAt;
+                }
+                return b.list.length - a.list.length;
+            });
 
-            let bestItems = null;
+            let bestCandidate = null;
             if (realCandidates.length > 0) {
-                bestItems = realCandidates[0].list;
+                bestCandidate = realCandidates[0];
             } else if (itemCandidates.length > 0) {
-                bestItems = itemCandidates[0].list;
+                bestCandidate = itemCandidates[0];
             }
 
             let bestCats = null;
@@ -759,7 +795,13 @@
                 bestCats = catCandidates[0].list;
             }
 
-            return { bestItems, bestCats };
+            return {
+                bestItems: bestCandidate ? bestCandidate.list : null,
+                bestFromLocal: bestCandidate ? bestCandidate.isLocal : false,
+                localUpdatedAt,
+                cloudUpdatedAt,
+                bestCats
+            };
         }
 
         window.forceCloudScanAndSync = async () => {
@@ -772,16 +814,16 @@
                 items = normalizeItems(bestItems);
                 hasRealUserData = true;
                 syncCategoriesWithItems(false);
-                saveApp();
+                saveApp(true);
                 saveCategories();
                 populateCatSelect();
                 renderSettingsCats();
                 render();
                 cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 updateSyncStatusUI();
-                showToast(`Восстановлено товаров: ${items.length}`);
+                showToast(`Синхронизировано товаров: ${items.length}`);
             } else if (hasRealUserData && !isDefaultInitialList(items)) {
-                saveApp();
+                saveApp(true);
                 saveCategories();
                 showToast(`База (${items.length} тов.) записана в облако!`);
             } else {
@@ -791,7 +833,6 @@
         };
 
         async function initApp() {
-            // Быстрый локальный рендер до ответа облака
             const quickLocal = parseJsonSafe(safeStorage.get(STORE_KEYS.items)) ||
                                parseJsonSafe(safeStorage.get(STORE_KEYS.backup)) ||
                                parseJsonSafe(safeStorage.get('stock_items_v4'));
@@ -803,7 +844,6 @@
                 items = normalizeItems(quickLocal);
                 hasRealUserData = !isDefaultInitialList(items);
             } else {
-                // Показываем шаблон только в памяти, НЕ перезаписывая им хранилище!
                 items = JSON.parse(JSON.stringify(initialProducts));
                 hasRealUserData = false;
             }
@@ -823,8 +863,7 @@
             initSwipeToClose();
             updateSyncStatusUI();
 
-            // Полное сканирование облака и восстановление
-            const { bestItems, bestCats } = await scanAndRecoverStorages();
+            const { bestItems, bestFromLocal, localUpdatedAt, cloudUpdatedAt, bestCats } = await scanAndRecoverStorages();
             if (bestCats && bestCats.length > 0) {
                 CATEGORIES = Array.from(new Set([...bestCats, ...CATEGORIES]));
                 safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
@@ -835,9 +874,11 @@
                 syncCategoriesWithItems(false);
                 safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
                 safeStorage.set(STORE_KEYS.backup, JSON.stringify(items));
-                // Если данные нашлись в старом ключе, дублируем их в актуальный облачный ключ
-                if (cloudSyncState.cloudCount === 0 && tgCloud.isAvailable()) {
-                    await saveToCloudChunked('cloud_homyak_items_v5', items);
+
+                // Если локальная копия новее облачной (предыдущая отправка прервалась при закрытии) или в облаке пусто — догружаем в облако
+                if (tgCloud.isAvailable() && (cloudSyncState.cloudCount === 0 || (bestFromLocal && localUpdatedAt > cloudUpdatedAt))) {
+                    const syncStamp = (localUpdatedAt || Date.now()).toString();
+                    await saveToCloudChunked('cloud_homyak_items_v5', items, syncStamp);
                     await saveToCloudChunked('cloud_homyak_cats_v2', CATEGORIES);
                     cloudSyncState.cloudCount = items.length;
                 }
@@ -849,6 +890,11 @@
             render();
             updateSyncStatusUI();
         }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flushLocalSnapshot();
+        });
+        window.addEventListener('pagehide', flushLocalSnapshot);
 
         window.openStoreLink = (url) => {
             if (tg.openLink) { tg.openLink(url); } else { window.open(url, '_blank'); }
@@ -925,7 +971,7 @@
                 
                 normalizeItems(items);
                 syncCategoriesWithItems(false);
-                saveApp(); saveCategories(); render();
+                saveApp(true); saveCategories(); render();
                 closeModal(document.getElementById('importModal'));
                 showToast("Успешно обновлено!");
             } catch(e) {
@@ -1172,7 +1218,7 @@
                 const catIndex = CATEGORIES.indexOf(oldName);
                 if (catIndex > -1) CATEGORIES[catIndex] = newName;
                 items.forEach(item => { if (item.cat === oldName) item.cat = newName; });
-                saveApp(); saveCategories();
+                saveApp(true); saveCategories();
             } else { renderSettingsCats(); }
         };
 
@@ -1194,7 +1240,7 @@
         function openForm(id = null) {
             const modal = document.getElementById('formModal');
             if (id) {
-                const item = items.find(i => i.id === id);
+                const item = items.find(i => i.id == id);
                 document.getElementById('formTitle').innerText = "Редактировать";
                 document.getElementById('editId').value = item.id;
                 document.getElementById('inpName').value = item.name;
@@ -1232,17 +1278,19 @@
 
             if (id) {
                 const item = items.find(i => i.id == id);
-                item.name = name; item.cat = cat; item.note = note; item.store = store;
+                if (item) {
+                    item.name = name; item.cat = cat; item.note = note; item.store = store;
+                }
             } else {
                 items.push({ id: Date.now(), name, cat, note, store, status: 'ok' });
             }
-            saveApp(); render(); closeModal(document.getElementById('formModal'));
+            saveApp(true); render(); closeModal(document.getElementById('formModal'));
         };
 
         document.getElementById('btnDeleteForm').onclick = () => {
             const id = document.getElementById('editId').value;
             items = items.filter(i => i.id != id);
-            saveApp(); render(); closeModal(document.getElementById('formModal'));
+            saveApp(true); render(); closeModal(document.getElementById('formModal'));
         };
 
         function openModal(el) { 
