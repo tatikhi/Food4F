@@ -455,6 +455,29 @@
         if (tg.expand) tg.expand();
         if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
 
+        // Универсальный виброотклик для iOS (Telegram HapticFeedback) и Android
+        function triggerHaptic(type = 'tick') {
+            try {
+                const hf = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback;
+                if (hf) {
+                    if (type === 'tick') hf.selectionChanged();
+                    else if (type === 'light') hf.impactOccurred('light');
+                    else if (type === 'medium') hf.impactOccurred('medium');
+                    else if (type === 'heavy') hf.impactOccurred('heavy');
+                    else if (type === 'success') hf.notificationOccurred('success');
+                    else if (type === 'warning') hf.notificationOccurred('warning');
+                    else if (type === 'error') hf.notificationOccurred('error');
+                }
+                if (navigator.vibrate) {
+                    if (type === 'tick' || type === 'light') navigator.vibrate(10);
+                    else if (type === 'medium') navigator.vibrate(20);
+                    else if (type === 'heavy') navigator.vibrate(35);
+                    else if (type === 'success') navigator.vibrate([20, 40, 60]);
+                    else if (type === 'warning' || type === 'error') navigator.vibrate([40, 40, 40]);
+                }
+            } catch (e) {}
+        }
+
         function updateViewportHeight() {
             const h = tg.viewportHeight || window.innerHeight;
             document.documentElement.style.setProperty('--tg-viewport-height', h + 'px');
@@ -515,7 +538,6 @@
             return unescape(encodeURIComponent(str)).length;
         }
 
-        // Разбиение строки строго по лимиту байт UTF-8 (лимит Telegram CloudStorage — 4096 байт)
         function splitByUtf8Bytes(str, maxBytes = 3400) {
             if (!str) return ['[]'];
             const chunks = [];
@@ -668,7 +690,6 @@
             try { return JSON.parse(raw); } catch(e) { return null; }
         }
 
-        // Последовательная запись с точным контролем байт UTF-8
         async function saveToCloudChunked(key, dataObj, updatedAtStr = null) {
             if (!tgCloud.isAvailable()) return { ok: false, err: 'Нет доступа к облаку' };
             const jsonStr = JSON.stringify(dataObj);
@@ -736,11 +757,17 @@
                         cloudSyncState.lastError = '';
                         cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                         updateSyncStatusUI();
-                        if (notify) showToast("✓ Сохранено в облако");
+                        if (notify) {
+                            triggerHaptic('success');
+                            showToast("✓ Сохранено в облако");
+                        }
                     } else {
                         cloudSyncState.lastError = resItems.err || resCats.err || 'Сбой записи';
                         updateSyncStatusUI();
-                        if (notify) showToast("⚠️ Ошибка облака: " + cloudSyncState.lastError);
+                        if (notify) {
+                            triggerHaptic('error');
+                            showToast("⚠️ Ошибка облака: " + cloudSyncState.lastError);
+                        }
                     }
                 }
             }
@@ -899,8 +926,6 @@
                     }
                 }
 
-                // Если v6 уже есть в облаке, отбрасываем устаревшие архивы v5/v4 (и старые localStorage при сброшенном localUpdatedAt),
-                // чтобы удалённые товары не возвращались
                 if (hasV6) {
                     for (let i = itemCandidates.length - 1; i >= 0; i--) {
                         const c = itemCandidates[i];
@@ -940,6 +965,7 @@
         }
 
         window.forceCloudScanAndSync = async () => {
+            triggerHaptic('light');
             showToast("Проверяю облако Telegram...");
             const { bestItems, bestCats } = await scanAndRecoverStorages();
             if (bestCats && bestCats.length > 0) {
@@ -956,13 +982,16 @@
                 render();
                 cloudSyncState.lastSync = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 updateSyncStatusUI();
+                triggerHaptic('success');
                 showToast(`Синхронизировано товаров: ${items.length}`);
             } else if (hasRealUserData && !isDefaultInitialList(items)) {
                 saveApp(true);
                 saveCategories();
+                triggerHaptic('success');
                 showToast(`База (${items.length} тов.) записана в облако!`);
             } else {
                 updateSyncStatusUI();
+                triggerHaptic('warning');
                 showToast("В облаке этого бота пока нет сохраненной базы");
             }
         };
@@ -987,6 +1016,7 @@
 
             document.getElementById('quickSort').value = sortPref;
             document.getElementById('quickSort').onchange = (e) => {
+                triggerHaptic('tick');
                 sortPref = e.target.value;
                 localStorage.setItem('homyak_sort', sortPref);
                 render();
@@ -1038,10 +1068,12 @@
         window.addEventListener('pagehide', flushLocalSnapshot);
 
         window.openStoreLink = (url) => {
+            triggerHaptic('light');
             if (tg.openLink) { tg.openLink(url); } else { window.open(url, '_blank'); }
         };
 
         window.openExportModal = () => {
+            triggerHaptic('light');
             const payload = {
                 cats: CATEGORIES,
                 items: items.map(it => ({
@@ -1064,21 +1096,27 @@
             textarea.setSelectionRange(0, 99999);
             try {
                 document.execCommand('copy');
+                triggerHaptic('success');
                 showToast("Успешно скопировано!");
                 setTimeout(() => closeModal(document.getElementById('exportModal')), 1000);
             } catch (err) {
+                triggerHaptic('error');
                 showToast("Не удалось скопировать автоматически, скопируйте текст вручную.");
             }
         };
 
         window.openImportModal = () => {
+            triggerHaptic('light');
             document.getElementById('importTextarea').value = '';
             openModal(document.getElementById('importModal'));
         };
 
         window.applyImportCode = () => {
             const code = document.getElementById('importTextarea').value.trim();
-            if (!code) return showToast("Код не вставлен!");
+            if (!code) {
+                triggerHaptic('error');
+                return showToast("Код не вставлен!");
+            }
             
             try {
                 const str = decodeURIComponent(escape(atob(code)));
@@ -1105,6 +1143,7 @@
                         store: STORE_LIST[it[5]] || it[5] || 'none'
                     }));
                 } else {
+                    triggerHaptic('error');
                     return showToast("Неверный формат кода.");
                 }
                 
@@ -1112,13 +1151,16 @@
                 syncCategoriesWithItems(false);
                 saveApp(true); saveCategories(); render();
                 closeModal(document.getElementById('importModal'));
+                triggerHaptic('success');
                 showToast("Успешно обновлено!");
             } catch(e) {
+                triggerHaptic('error');
                 showToast("Ошибка чтения кода. Проверьте, полностью ли скопирован.");
             }
         };
 
         window.toggleOrangeFilter = () => {
+            triggerHaptic('tick');
             filterOrange = !filterOrange;
             const btn = document.getElementById('btnFilterOrange');
             if (filterOrange) btn.classList.add('active');
@@ -1176,6 +1218,7 @@
         });
 
         window.toggleCategory = (catName) => {
+            triggerHaptic('tick');
             collapsedCategories[catName] = !collapsedCategories[catName];
             localStorage.setItem('homyak_collapsed', JSON.stringify(collapsedCategories));
             renderShelves(document.getElementById('contentContainer'));
@@ -1297,7 +1340,13 @@
 
         function setStatus(id, newStatus) {
             const item = items.find(i => String(i.id) === String(id));
-            if (item) { item.status = newStatus; saveApp(); render(); }
+            if (item) {
+                item.status = newStatus;
+                if (newStatus === 'ok') triggerHaptic('success');
+                else triggerHaptic('medium');
+                saveApp();
+                render();
+            }
         }
 
         function populateCatSelect() {
@@ -1307,6 +1356,7 @@
         }
 
         window.moveCategory = (index, dir) => {
+            triggerHaptic('tick');
             if (dir === -1 && index > 0) {
                 [CATEGORIES[index-1], CATEGORIES[index]] = [CATEGORIES[index], CATEGORIES[index-1]];
             } else if (dir === 1 && index < CATEGORIES.length - 1) {
@@ -1340,6 +1390,7 @@
         }
 
         window.startEditCategory = (index) => {
+            triggerHaptic('tick');
             document.getElementById(`cat-name-${index}`).style.display = 'none';
             const input = document.getElementById(`cat-input-${index}`);
             input.style.display = 'block'; input.focus();
@@ -1351,9 +1402,16 @@
             const oldName = CATEGORIES[index];
             const input = document.getElementById(`cat-input-${index}`);
             const newName = input.value.trim();
-            if (!newName) return showToast("Название не может быть пустым");
-            if (newName !== oldName && CATEGORIES.includes(newName)) return showToast("Такая категория уже есть");
+            if (!newName) {
+                triggerHaptic('error');
+                return showToast("Название не может быть пустым");
+            }
+            if (newName !== oldName && CATEGORIES.includes(newName)) {
+                triggerHaptic('error');
+                return showToast("Такая категория уже есть");
+            }
             
+            triggerHaptic('success');
             if (newName !== oldName) {
                 CATEGORIES[index] = newName;
                 items.forEach(item => { if (item.cat === oldName) item.cat = newName; });
@@ -1364,19 +1422,28 @@
         document.getElementById('btnAddCat').onclick = () => {
             const val = document.getElementById('inpNewCat').value.trim();
             if (!val) return;
-            if (CATEGORIES.includes(val)) return showToast("Уже существует");
+            if (CATEGORIES.includes(val)) {
+                triggerHaptic('error');
+                return showToast("Уже существует");
+            }
+            triggerHaptic('success');
             CATEGORIES.push(val);
             document.getElementById('inpNewCat').value = '';
             saveCategories();
         };
 
         window.deleteCategoryByIndex = (index) => {
-            if (CATEGORIES.length <= 1) return showToast("Нельзя удалить последнюю!");
+            if (CATEGORIES.length <= 1) {
+                triggerHaptic('error');
+                return showToast("Нельзя удалить последнюю!");
+            }
+            triggerHaptic('warning');
             CATEGORIES.splice(index, 1);
             saveCategories();
         };
 
         function openForm(id = null) {
+            triggerHaptic('light');
             const modal = document.getElementById('formModal');
             if (id !== null && id !== undefined) {
                 const item = items.find(i => String(i.id) === String(id));
@@ -1414,7 +1481,10 @@
             const note = document.getElementById('inpNote').value.trim();
             const store = document.getElementById('inpStore').value;
 
-            if (!name) return showToast("Введите название");
+            if (!name) {
+                triggerHaptic('error');
+                return showToast("Введите название");
+            }
 
             if (id) {
                 const item = items.find(i => String(i.id) === String(id));
@@ -1424,10 +1494,12 @@
             } else {
                 items.push({ id: Date.now(), name, cat, note, store, status: 'ok' });
             }
+            triggerHaptic('success');
             saveApp(true); render(); closeModal(document.getElementById('formModal'));
         };
 
         document.getElementById('btnDeleteForm').onclick = () => {
+            triggerHaptic('warning');
             const id = document.getElementById('editId').value;
             items = items.filter(i => String(i.id) !== String(id));
             saveApp(true); render(); closeModal(document.getElementById('formModal'));
@@ -1446,7 +1518,12 @@
         }
 
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay); });
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    triggerHaptic('tick');
+                    closeModal(overlay);
+                }
+            });
         });
 
         function initSwipeToClose() {
@@ -1471,6 +1548,7 @@
                     if (!isDragging) return;
                     isDragging = false;
                     if (currentY - startY > 100) {
+                        triggerHaptic('tick');
                         closeModal(card.closest('.modal-overlay'));
                         setTimeout(() => card.style.transform = '', 300);
                     } else {
@@ -1490,6 +1568,7 @@
         }
 
         document.getElementById('btnTabShelves').onclick = () => {
+            triggerHaptic('tick');
             currentTab = 'shelves';
             document.getElementById('tabSwitch').setAttribute('data-state', 'left');
             document.getElementById('btnTabShelves').classList.add('active');
@@ -1497,6 +1576,7 @@
             render();
         };
         document.getElementById('btnTabShopping').onclick = () => {
+            triggerHaptic('tick');
             currentTab = 'shopping';
             document.getElementById('tabSwitch').setAttribute('data-state', 'right');
             document.getElementById('btnTabShopping').classList.add('active');
@@ -1508,11 +1588,15 @@
             const btn = document.getElementById('btnScrollTop');
             if (window.scrollY > 300) btn.classList.add('visible'); else btn.classList.remove('visible');
         });
-        document.getElementById('btnScrollTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('btnScrollTop').onclick = () => {
+            triggerHaptic('light');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
         document.getElementById('themeRow').onclick = (e) => {
             const btn = e.target.closest('.theme-card-btn');
             if (btn) {
+                triggerHaptic('tick');
                 const theme = btn.dataset.theme;
                 document.documentElement.setAttribute('data-theme', theme);
                 localStorage.setItem('homyak_theme', theme);
@@ -1521,11 +1605,18 @@
         };
 
         document.getElementById('btnOpenSettings').onclick = () => {
+            triggerHaptic('light');
             updateSyncStatusUI();
             openModal(document.getElementById('settingsModal'));
         };
-        document.getElementById('btnCloseSettings').onclick = () => closeModal(document.getElementById('settingsModal'));
-        document.getElementById('btnCancelForm').onclick = () => closeModal(document.getElementById('formModal'));
+        document.getElementById('btnCloseSettings').onclick = () => {
+            triggerHaptic('tick');
+            closeModal(document.getElementById('settingsModal'));
+        };
+        document.getElementById('btnCancelForm').onclick = () => {
+            triggerHaptic('tick');
+            closeModal(document.getElementById('formModal'));
+        };
         document.getElementById('btnAddItem').onclick = () => openForm(null);
 
         function showToast(msg) {
