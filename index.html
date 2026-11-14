@@ -102,10 +102,10 @@
         .segmented-btn.active { color: var(--text-primary); }
 
         /* УПРАВЛЕНИЕ СПИСКОМ */
-        .controls-row { display: flex; gap: 6px; margin-bottom: 12px; width: 100%; }
+        .controls-row { display: flex; gap: 6px; margin-bottom: 12px; width: 100%; align-items: center; }
         
-        .search-bar-wrapper { position: relative; flex: 1; }
-        .search-bar-wrapper input { padding-left: 36px; border-radius: 10px; background: var(--bg-main); border: 1px solid var(--border-color); width: 100%; height: 42px; font-size: 0.95rem !important; }
+        .search-bar-wrapper { position: relative; flex: 1; min-width: 0; }
+        .search-bar-wrapper input { padding-left: 34px; border-radius: 10px; background: var(--bg-main); border: 1px solid var(--border-color); width: 100%; height: 42px; font-size: 0.95rem !important; }
         .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--icon-inactive); width: 18px; height: 18px; }
 
         .filter-btn {
@@ -116,7 +116,18 @@
         }
         .filter-btn.active { background: var(--accent-light); border-color: rgb(215, 135, 30); box-shadow: inset 0 0 0 1px rgb(215, 135, 30); }
 
-        .sort-select { width: auto !important; min-width: 95px; padding: 0 10px !important; border-radius: 10px !important; background-color: var(--bg-main) !important; font-weight: 600; font-size: 0.85rem !important; height: 42px; }
+        .sort-select {
+            width: 160px !important;
+            min-width: 160px !important;
+            flex-shrink: 0;
+            padding: 0 36px 0 12px !important;
+            background-position: right 12px center !important;
+            border-radius: 10px !important;
+            background-color: var(--bg-main) !important;
+            font-weight: 600;
+            font-size: 0.85rem !important;
+            height: 42px;
+        }
 
         /* КАТЕГОРИИ И ГАРМОШКА */
         .category-container { margin-bottom: 8px; }
@@ -149,7 +160,7 @@
         .item-note { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 500; }
 
         /* СТАТУСЫ И КНОПКИ */
-        .status-controls { display: flex; gap: 8px; align-items: center; }
+        .status-controls { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
         .dot-btn { width: 24px; height: 24px; border-radius: 50%; background-color: var(--icon-inactive); opacity: 0.25; cursor: pointer; transition: 0.2s; border: none; display: flex; align-items: center; justify-content: center; color: transparent; }
         .dot-btn.active { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px currentColor; }
         
@@ -167,8 +178,9 @@
         .btn-check-done svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
         .store-btn-compact {
-            background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px;
-            padding: 4px 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: 0.2s;
+            background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px;
+            height: 30px; padding: 0 9px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; text-decoration: none; transition: 0.2s;
         }
         .store-btn-compact:active { opacity: 0.7; }
 
@@ -457,14 +469,19 @@
             {n: "Макаронные изделия", cat: "Кухня"}, {n: "Рис", cat: "Кухня"}, {n: "Глазные капли Стиллавит", cat: "Аптека"}, {n: "Стиральный порошок", cat: "NonFood"}
         ].map((p, i) => ({ id: i+1, name: p.n, cat: p.cat, note: p.note || '', status: 'ok', store: 'none' }));
 
+        const DEFAULT_CATS = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"];
+
         let items = [];
         let currentTab = 'shelves';
         let sortPref = localStorage.getItem('homyak_sort') || localStorage.getItem('food4f_sort') || 'date';
         let searchQuery = '';
-        
         let filterOrange = false;
 
-        const STORE_KEYS = { items: 'homyak_items_v5', cats: 'homyak_cats_v2' }; 
+        const STORE_KEYS = {
+            items: 'homyak_items_v5',
+            cats: 'homyak_cats_v2',
+            backup: 'homyak_items_backup_v5'
+        };
 
         const safeStorage = {
             get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
@@ -475,6 +492,26 @@
             set(key, val) { return new Promise(resolve => { if (tg.CloudStorage) tg.CloudStorage.setItem(key, val, () => resolve()); else resolve(); }); },
             get(key) { return new Promise(resolve => { if (tg.CloudStorage) tg.CloudStorage.getItem(key, (err, val) => resolve(val || null)); else resolve(null); }); }
         };
+
+        function isDefaultInitialList(list) {
+            if (!Array.isArray(list) || list.length === 0) return true;
+            if (list.length !== initialProducts.length) return false;
+            return list.every((it, idx) =>
+                it.name === initialProducts[idx].name &&
+                (it.status || 'ok') === 'ok' &&
+                (!it.store || it.store === 'none')
+            );
+        }
+
+        function parseListSafe(raw) {
+            if (!raw) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+            } catch(e) {
+                return null;
+            }
+        }
 
         async function saveToCloudChunked(key, dataObj) {
             const jsonStr = JSON.stringify(dataObj);
@@ -494,11 +531,20 @@
                 const chunk = await tgCloud.get(key + '_' + i);
                 if (chunk) fullStr += chunk;
             }
-            try { return JSON.parse(fullStr); } catch(e) { return null; }
+            try {
+                const parsed = JSON.parse(fullStr);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+            } catch(e) {
+                return null;
+            }
         }
 
         function saveApp() {
-            safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+            const serialized = JSON.stringify(items);
+            safeStorage.set(STORE_KEYS.items, serialized);
+            if (!isDefaultInitialList(items)) {
+                safeStorage.set(STORE_KEYS.backup, serialized);
+            }
             if (tg.CloudStorage) saveToCloudChunked('cloud_homyak_items_v5', items);
         }
 
@@ -521,55 +567,47 @@
             if (changed) saveCategories();
         }
 
-        async function initApp() {
-            // ПРИНУДИТЕЛЬНЫЙ ПОИСК И ВОССТАНОВЛЕНИЕ СТАРЫХ ДАННЫХ ИЗ ЛЮБЫХ ПРЕЖНИХ КЛЮЧЕЙ
-            const oldDataRaw = safeStorage.get('stock_items_v4') || safeStorage.get('food4f_items') || safeStorage.get('stock_items');
-            if (oldDataRaw) {
-                try {
-                    const parsedOld = JSON.parse(oldDataRaw);
-                    if (Array.isArray(parsedOld) && parsedOld.length > 0) {
-                        items = parsedOld;
-                        safeStorage.set(STORE_KEYS.items, JSON.stringify(items)); // перезаписываем актуальный ключ вашей реальной базой
-                    }
-                } catch(e) {}
-            }
-
-            const oldCatsRaw = safeStorage.get('stock_cats_v1') || safeStorage.get('food4f_cats');
-            if (oldCatsRaw) {
-                try {
-                    const parsedCats = JSON.parse(oldCatsRaw);
-                    if (Array.isArray(parsedCats) && parsedCats.length > 0) {
-                        CATEGORIES = parsedCats;
-                        safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
-                    }
-                } catch(e) {}
-            }
-
-            // Если в старых ключах ничего не было, берем из текущих
-            const localCats = safeStorage.get(STORE_KEYS.cats);
-            if (localCats && CATEGORIES.length === 0) {
-                try { CATEGORIES = JSON.parse(localCats); } catch(e) {}
-            }
-            if (CATEGORIES.length === 0) {
-                CATEGORIES = ["Холодильник", "Морозилка", "Кухня", "NonFood", "Аптека"];
-                saveCategories();
-            }
-
-            const localItems = safeStorage.get(STORE_KEYS.items);
-            if (localItems && items.length === 0) { 
-                try { items = JSON.parse(localItems); } catch(e) {}
-            } 
-            if (items.length === 0) {
-                items = initialProducts; 
-                saveApp(); 
-            }
-            
-            items.forEach(i => { 
-                if(i.store === 'market') i.store = 'lavka'; 
-                if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none';
+        function normalizeItems(list) {
+            list.forEach(i => {
+                if (i.store === 'market') i.store = 'lavka';
+                if (i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none';
+                if (!i.status) i.status = 'ok';
             });
-            
+            return list;
+        }
+
+        async function initApp() {
+            // 1. Собираем все локальные кандидаты (актуальные, резервные и старые v4)
+            const localCandidates = [
+                parseListSafe(safeStorage.get(STORE_KEYS.items)),
+                parseListSafe(safeStorage.get(STORE_KEYS.backup)),
+                parseListSafe(safeStorage.get('stock_items_v4')),
+                parseListSafe(safeStorage.get('food4f_items')),
+                parseListSafe(safeStorage.get('stock_items'))
+            ].filter(Boolean);
+
+            const realLocal = localCandidates.find(list => !isDefaultInitialList(list));
+            if (realLocal) {
+                items = realLocal;
+            } else if (localCandidates.length > 0) {
+                items = localCandidates[0];
+            } else {
+                items = initialProducts;
+            }
+
+            const localCatCandidates = [
+                parseListSafe(safeStorage.get(STORE_KEYS.cats)),
+                parseListSafe(safeStorage.get('stock_cats_v1')),
+                parseListSafe(safeStorage.get('food4f_cats'))
+            ].filter(Boolean);
+
+            CATEGORIES = localCatCandidates.length > 0 ? localCatCandidates[0] : [...DEFAULT_CATS];
+
+            normalizeItems(items);
             syncCategoriesWithItems();
+
+            safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+            safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
 
             document.getElementById('quickSort').value = sortPref;
             document.getElementById('quickSort').onchange = (e) => {
@@ -583,19 +621,42 @@
             render();
             initSwipeToClose();
 
+            // 2. Синхронизация с Telegram CloudStorage (никогда не затираем реальную базу дефолтным списком)
             if (tg.CloudStorage) {
-                const cloudItems = await loadFromCloudChunked('cloud_homyak_items_v5');
-                const cloudCats = await loadFromCloudChunked('cloud_homyak_cats_v2');
-                
-                // Облако берем только если там больше или столько же элементов, чтобы не затереть локальные
-                if (cloudCats && cloudCats.length >= CATEGORIES.length) CATEGORIES = cloudCats;
-                if (cloudItems && cloudItems.length >= items.length) items = cloudItems;
-                
-                syncCategoriesWithItems();
+                const cloudV5 = await loadFromCloudChunked('cloud_homyak_items_v5');
+                const cloudV4 = await loadFromCloudChunked('cloud_items_v4');
 
-                safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
-                safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
-                
+                const cloudCandidates = [cloudV5, cloudV4].filter(Boolean);
+                const realCloud = cloudCandidates.find(list => !isDefaultInitialList(list));
+
+                if (realCloud) {
+                    // Если в облаке есть реальные пользовательские данные — берем их,
+                    // но только если локально у нас еще не было реальных данных или облачный список полнее
+                    if (isDefaultInitialList(items) || (cloudV5 && !isDefaultInitialList(cloudV5))) {
+                        items = normalizeItems(realCloud);
+                        safeStorage.set(STORE_KEYS.items, JSON.stringify(items));
+                        safeStorage.set(STORE_KEYS.backup, JSON.stringify(items));
+                    }
+                    // Если реальные данные пришли из старого облака v4, обновляем ими v5
+                    if (isDefaultInitialList(cloudV5)) {
+                        saveToCloudChunked('cloud_homyak_items_v5', items);
+                    }
+                } else if (!isDefaultInitialList(items)) {
+                    // Локально есть восстановленная база, а в облаке пусто или только стартовый шаблон -> записываем базу в облако
+                    saveToCloudChunked('cloud_homyak_items_v5', items);
+                }
+
+                const cloudCatsV2 = await loadFromCloudChunked('cloud_homyak_cats_v2');
+                const cloudCatsV1 = await loadFromCloudChunked('cloud_cats_v1');
+                const resolvedCloudCats = (cloudCatsV2 && cloudCatsV2.length > 0) ? cloudCatsV2 : cloudCatsV1;
+
+                if (resolvedCloudCats && resolvedCloudCats.length > 0) {
+                    CATEGORIES = Array.from(new Set([...resolvedCloudCats, ...CATEGORIES]));
+                    safeStorage.set(STORE_KEYS.cats, JSON.stringify(CATEGORIES));
+                }
+                saveToCloudChunked('cloud_homyak_cats_v2', CATEGORIES);
+
+                syncCategoriesWithItems();
                 populateCatSelect();
                 renderSettingsCats();
                 render();
@@ -675,8 +736,7 @@
                     return showToast("Неверный формат кода.");
                 }
                 
-                items.forEach(i => { if(i.store === 'market') i.store = 'lavka'; if(i.store === 'vkusvill' || i.store === 'samokat') i.store = 'none'; });
-
+                normalizeItems(items);
                 syncCategoriesWithItems();
                 saveApp(); saveCategories(); render();
                 closeModal(document.getElementById('importModal'));
@@ -832,23 +892,19 @@
                 
                 list.forEach(item => {
                     const query = encodeURIComponent(item.name + (item.note ? ' ' + item.note : ''));
-                    
-                    let storeBadge = '';
-                    if (item.store === 'ozon') storeBadge = '<span class="store-badge badge-ozon">f</span>';
-                    if (item.store === 'lavka') storeBadge = '<span class="store-badge badge-lavka">М</span>';
 
                     let storeActionHtml = '';
                     if (item.store && STORES[item.store]) {
                         const st = STORES[item.store];
                         storeActionHtml = `<a class="store-btn-compact" href="#" onclick="event.preventDefault(); openStoreLink('${st.url}${query}')" title="${st.label}">
-                            ${item.store === 'ozon' ? '<span class="store-badge badge-ozon" style="font-size:0.75rem; padding:2px 5px;">f</span>' : '<span class="store-badge badge-lavka" style="font-size:0.75rem; padding:2px 5px;">М</span>'}
+                            ${item.store === 'ozon' ? '<span class="store-badge badge-ozon" style="font-size:0.75rem; padding:2px 6px;">f</span>' : '<span class="store-badge badge-lavka" style="font-size:0.75rem; padding:2px 6px;">М</span>'}
                         </a>`;
                     }
 
                     html += `
                     <div class="routine-item" onclick="openForm(${item.id})">
                         <div class="item-info">
-                            <div class="item-name">${item.name} ${storeBadge}</div>
+                            <div class="item-name">${item.name}</div>
                             ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
                         </div>
                         <div class="status-controls" onclick="event.stopPropagation()">
